@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#050609"><title>3D Smoke</title>
 <style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050609;color:#dde2eb;font-family:system-ui,sans-serif}canvas{display:block;width:100%;height:100%;touch-action:none}aside{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));left:0;right:0;text-align:center;font-size:12px;letter-spacing:.1em;pointer-events:none;opacity:.65}#error{position:fixed;inset:0;display:none;place-items:center;padding:24px;text-align:center}</style></head>
-<body><canvas id="view" aria-label="3Dの煙と不揃いなダスト。ドラッグして視点を回転できます"></canvas><aside>3D SMOKE + DUST · ドラッグで視点を回転</aside><div id="error"></div>
+<body><canvas id="view" aria-label="3Dの煙と不揃いなダスト。ドラッグして視点を回転できます"></canvas><aside>GREEN / PURPLE LIGHTS · ドラッグで視点を回転</aside><div id="error"></div>
 <script>
 'use strict';
 (function(){
@@ -20,6 +20,27 @@ varying vec2 uv;
 uniform vec2 resolution;
 uniform float time;
 uniform vec2 orbit;
+
+vec3 movingLights(vec3 p){
+ vec3 total=vec3(0.);
+ for(int j=0;j<4;j++){
+  float id=float(j);
+  float speed=.21+id*.113;
+  float t=time*speed+id*1.9;
+  vec3 origin=vec3(mod(id,2.)<.5?-2.7:2.7,1.9-id*.38,id<1.5?1.5:-1.6);
+  vec3 target=vec3(sin(t)*1.75,sin(t*.79+id)*1.7,cos(t*.67+id)*1.4);
+  vec3 axis=normalize(target-origin);
+  vec3 delta=p-origin;
+  float distanceToLight=length(delta);
+  float cone=dot(delta/max(distanceToLight,.001),axis);
+  float beam=smoothstep(.94,.985,cone);
+  float attenuation=1./(1.+distanceToLight*distanceToLight*.085);
+  vec3 tint=mod(id,2.)<.5?vec3(.12,1.,.27):vec3(.72,.12,1.);
+  total+=tint*beam*attenuation*2.3;
+ }
+ return total;
+}
+
 float hash(vec3 p){p=fract(p*.1031);p+=dot(p,p.yzx+33.33);return fract((p.x+p.y)*p.z);}
 float noise(vec3 p){
  vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
@@ -63,7 +84,7 @@ void main(){
    if(d>.01){
     float shadow=density(p+light*.23);
     float illumination=.24+.76*exp(-shadow*2.5);
-    vec3 tint=mix(vec3(.43,.48,.58),vec3(.91,.94,1.),illumination);
+    vec3 tint=vec3(.055,.065,.085)+movingLights(p)*(.4+.6*illumination);
     float alpha=1.-exp(-d*stepSize*3.2);
     accumulated+=transmittance*alpha*tint;
     transmittance*=1.-alpha;
@@ -93,6 +114,28 @@ uniform vec2 resolution;
 varying float sparkle;
 varying float angle;
 varying float stretch;
+varying vec3 dustTint;
+
+vec3 movingLights(vec3 p){
+ vec3 total=vec3(0.);
+ for(int j=0;j<4;j++){
+  float id=float(j);
+  float speed=.21+id*.113;
+  float t=time*speed+id*1.9;
+  vec3 origin=vec3(mod(id,2.)<.5?-2.7:2.7,1.9-id*.38,id<1.5?1.5:-1.6);
+  vec3 target=vec3(sin(t)*1.75,sin(t*.79+id)*1.7,cos(t*.67+id)*1.4);
+  vec3 axis=normalize(target-origin);
+  vec3 delta=p-origin;
+  float distanceToLight=length(delta);
+  float cone=dot(delta/max(distanceToLight,.001),axis);
+  float beam=smoothstep(.94,.985,cone);
+  float attenuation=1./(1.+distanceToLight*distanceToLight*.085);
+  vec3 tint=mod(id,2.)<.5?vec3(.12,1.,.27):vec3(.72,.12,1.);
+  total+=tint*beam*attenuation*2.3;
+ }
+ return total;
+}
+
 void main(){
  float phase=fract(dustSeed.x+time*(.022+dustSeed.w*.026));
  float h=phase*3.8-1.9;
@@ -101,6 +144,7 @@ void main(){
  vec3 p=vec3(cos(a)*radius,h,sin(a)*radius);
  p.x+=sin(h*2.1-time*.24)*.23;
  p.z+=cos(h*1.7-time*.19)*.23;
+ dustTint=vec3(.035,.045,.065)+movingLights(p)*1.4;
  vec3 eye=vec3(sin(orbit.x)*cos(orbit.y),sin(orbit.y),cos(orbit.x)*cos(orbit.y))*4.9;
  vec3 forward=normalize(-eye);
  vec3 right=normalize(cross(forward,vec3(0,1,0)));
@@ -121,12 +165,13 @@ precision mediump float;
 varying float sparkle;
 varying float angle;
 varying float stretch;
+varying vec3 dustTint;
 void main(){
  vec2 p=gl_PointCoord*2.-1.;
  p=mat2(cos(angle),-sin(angle),sin(angle),cos(angle))*p;
  float r=length(p*vec2(1.,1./stretch));
  float alpha=(1.-smoothstep(.15,1.,r))*sparkle;
- gl_FragColor=vec4(.82,.88,1.,alpha);
+ gl_FragColor=vec4(dustTint,alpha);
 }
 `;
 const dustProgram=gl.createProgram();
