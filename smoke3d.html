@@ -56,7 +56,7 @@ float noise(vec3 p){
 }
 float fbm(vec3 p){return noise(p)*.57+noise(p*2.03+7.1)*.28+noise(p*4.07+13.2)*.15;}
 float density(vec3 p){
- vec3 q=(p-vec3(-1.6,-2.,-1.6))/vec3(3.2,4.,3.2);
+ vec3 q=(p-vec3(-3.,-2.5,-3.))/vec3(6.,5.,6.);
  if(min(q.x,min(q.y,q.z))<0.||max(q.x,max(q.y,q.z))>1.)return 0.;
  float z=q.z*15.;
  float z0=floor(z),z1=min(15.,z0+1.);
@@ -75,8 +75,8 @@ void main(){
  vec3 right=normalize(cross(forward,vec3(0,1,0)));
  vec3 up=cross(right,forward);
  vec3 ray=normalize(forward*focal+right*screen.x+up*screen.y);
- vec3 lo=(-vec3(1.65,1.95,1.65)-eye)/ray;
- vec3 hi=(vec3(1.65,1.95,1.65)-eye)/ray;
+ vec3 lo=(-vec3(3.,2.5,3.)-eye)/ray;
+ vec3 hi=(vec3(3.,2.5,3.)-eye)/ray;
  vec3 nearV=min(lo,hi),farV=max(lo,hi);
  float start=max(0.,max(nearV.x,max(nearV.y,nearV.z)));
  float end=min(farV.x,min(farV.y,farV.z));
@@ -247,7 +247,7 @@ let nextX=new Float32Array(SIZE),nextY=new Float32Array(SIZE),nextZ=new Float32A
 let pressure=new Float32Array(SIZE),pressureNext=new Float32Array(SIZE);
 const divergence=new Float32Array(SIZE),solid=new Uint8Array(SIZE);
 const atlas=new Uint8Array(256*28*4);
-const dx=3.2/15,dy=4/27,dz=3.2/15;
+const dx=6/15,dy=5/27,dz=6/15;
 let simTime=0,cubePosition=-.8,cubeVelocity=.4;
 const cubeUniform=gl.getUniformLocation(program,'cubeY');
 const fieldUniform=gl.getUniformLocation(program,'smokeField');
@@ -267,14 +267,14 @@ function sample(a,x,y,z){
  value+=a[index(ix+i,iy+j,iz+k)]*(i?fx:1-fx)*(j?fy:1-fy)*(k?fz:1-fz);
  return value;
 }
-function flowAt(x,y,z){const gx=(x+1.6)/dx,gy=(y+2)/dy,gz=(z+1.6)/dz;return [sample(vx,gx,gy,gz),sample(vy,gx,gy,gz),sample(vz,gx,gy,gz)];}
+function flowAt(x,y,z){const gx=(x+3)/dx,gy=(y+2.5)/dy,gz=(z+3)/dz;return [sample(vx,gx,gy,gz),sample(vy,gx,gy,gz),sample(vz,gx,gy,gz)];}
 function advance(dt){
  simTime+=dt;
  const phase=(simTime*.4)%3.2;
  cubePosition=phase<1.6?-.8+phase:2.4-phase;
  cubeVelocity=phase<1.6?.4:-.4;
  for(let z=0;z<NZ;z++)for(let y=0;y<NY;y++)for(let x=0;x<NX;x++){
-  const n=index(x,y,z),wx=x*dx-1.6,wy=y*dy-2,wz=z*dz-1.6;
+  const n=index(x,y,z),wx=x*dx-3,wy=y*dy-2.5,wz=z*dz-3;
   solid[n]=0;
   // Divergence-free curl forcing: the smoke swirls freely through the cube.
   const a=wx*2.2+simTime*.63,b=wy*2.7-simTime*.81;
@@ -286,8 +286,8 @@ function advance(dt){
   if(solid[n]){vx[n]=0;vy[n]=cubeVelocity;vz[n]=0;smoke[n]=0;continue;}
   vy[n]+=smoke[n]*.85*dt;
   const radial=wx*wx+wz*wz;
-  if(y<3&&radial<.24){
-   smoke[n]=Math.min(1,smoke[n]+dt*2.2*(1-radial/.24));
+  if(y<3&&radial<3.24){
+   smoke[n]=Math.min(1,smoke[n]+dt*1.65*(1-radial/3.24));
    vy[n]=Math.max(vy[n],.55);
    vx[n]+=Math.sin(simTime*1.7+wz*6)*dt*.08;
    vz[n]+=Math.cos(simTime*1.3+wx*6)*dt*.08;
