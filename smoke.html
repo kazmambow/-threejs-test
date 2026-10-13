@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#050609">
+<title>Smoke — 無限アニメーション</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050609}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+#error{position:fixed;inset:0;display:none;align-items:center;justify-content:center;color:white;font:16px sans-serif;padding:24px}
+</style>
+</head>
+<body>
+<canvas id="smoke" aria-label="黒い背景に白い煙がゆっくり渦を巻きながら立ち上る無限アニメーション"></canvas>
+<div id="error" role="alert"></div>
+<script>
+'use strict';
+(function(){
+const canvas=document.getElementById('smoke');
+const ctx=canvas.getContext('2d',{alpha:false});
+if(!ctx){const e=document.getElementById('error');e.textContent='このブラウザではCanvasを利用できません。';e.style.display='flex';return;}
+let width=0,height=0,clock=0,last=0,raf=0;
+let seed=91273;
+function random(){seed=(Math.imul(seed,1664525)+1013904223)|0;return (seed>>>0)/4294967296;}
+const textures=[];
+for(let k=0;k<5;k++){
+ const tex=document.createElement('canvas');tex.width=tex.height=192;
+ const t=tex.getContext('2d');
+ for(let i=0;i<65;i++){
+  const angle=random()*Math.PI*2;
+  const dist=Math.sqrt(random())*55;
+  const x=96+Math.cos(angle)*dist,y=96+Math.sin(angle)*dist;
+  const radius=16+random()*40;
+  const g=t.createRadialGradient(x,y,0,x,y,radius);
+  g.addColorStop(0,'rgba(210,218,230,0.085)');
+  g.addColorStop(.35,'rgba(185,195,212,0.045)');
+  g.addColorStop(1,'rgba(165,175,192,0)');
+  t.fillStyle=g;t.fillRect(x-radius,y-radius,radius*2,radius*2);
+ }
+ textures.push(tex);
+}
+const puffs=Array.from({length:120},(_,i)=>({
+ phase:i/120,life:13+random()*11,source:random(),
+ drift:(random()-.5)*.6,size:.13+random()*.15,
+ angle:random()*Math.PI*2,spin:(random()-.5)*.35,tex:i%5
+}));
+function resize(){
+ width=Math.max(1,innerWidth);height=Math.max(1,innerHeight);
+ const scale=Math.min(devicePixelRatio||1,1.5,1100/Math.max(width,height));
+ canvas.width=Math.round(width*scale);canvas.height=Math.round(height*scale);
+ ctx.setTransform(scale,0,0,scale,0,0);
+}
+function draw(now){
+ if(document.hidden){raf=0;return;}
+ if(last)clock+=Math.min((now-last)/1000,.05);last=now;
+ ctx.globalAlpha=1;ctx.fillStyle='#050609';ctx.fillRect(0,0,width,height);
+ const unit=Math.min(width,height);
+ for(const p of puffs){
+  const a=(p.phase+clock/p.life)%1;
+  const fade=Math.pow(Math.sin(Math.PI*a),.8);
+  const wave=Math.sin(a*8+p.angle+clock*.15);
+  const x=width*(.28+p.source*.44)+unit*(wave*.11*a+p.drift*a);
+  const y=height*(1.13-a*1.4);
+  const size=unit*(p.size+a*.66);
+  ctx.save();ctx.translate(x,y);ctx.rotate(p.angle+clock*p.spin+a*1.8);
+  ctx.globalAlpha=fade*(.25+.22*(1-a));
+  ctx.drawImage(textures[p.tex],-size/2,-size/2,size,size);ctx.restore();
+ }
+ ctx.globalAlpha=1;
+ raf=requestAnimationFrame(draw);
+}
+addEventListener('resize',resize,{passive:true});
+document.addEventListener('visibilitychange',()=>{
+ if(document.hidden){cancelAnimationFrame(raf);raf=0;}
+ else{last=0;if(!raf)raf=requestAnimationFrame(draw);}
+});
+resize();draw(performance.now());
+})();
+</script>
+</body>
+</html>
