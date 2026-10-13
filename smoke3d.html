@@ -4,7 +4,7 @@
 label{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 input[type=range]{display:block;width:100%;margin:0;accent-color:#bda0ff;touch-action:pan-x}
 .hint{text-align:center;font-size:10px;letter-spacing:.04em;opacity:.6;margin-top:10px}#error{position:fixed;inset:0;display:none;place-items:center;padding:24px;text-align:center}</style></head>
-<body><canvas id="view" aria-label="3Dの煙と不揃いなダスト。ドラッグで回転、ピンチで前後移動できます"></canvas><aside><label for="lens">焦点距離 <output id="lensValue" for="lens">35 mm</output></label><input id="lens" type="range" min="18" max="100" step="1" value="35" aria-label="レンズの焦点距離"><div class="hint">ドラッグで回転 · ピンチで前後移動</div></aside><div id="error"></div>
+<body><canvas id="view" aria-label="衝突する3Dの煙、ダスト、上下するキューブ。ドラッグで回転、ピンチで前後移動できます"></canvas><aside><label for="lens">焦点距離 <output id="lensValue" for="lens">35 mm</output></label><input id="lens" type="range" min="18" max="100" step="1" value="35" aria-label="レンズの焦点距離"><div class="hint">煙・ダストが上下するキューブに衝突 · ドラッグ／ピンチ</div></aside><div id="error"></div>
 <script>
 'use strict';
 (function(){
@@ -25,6 +25,8 @@ uniform float time;
 uniform vec2 orbit;
 uniform float cameraDistance;
 uniform float focal;
+uniform sampler2D smokeField;
+uniform float cubeY;
 
 vec3 movingLights(vec3 p){
  vec3 total=vec3(0.);
@@ -54,16 +56,16 @@ float noise(vec3 p){
 }
 float fbm(vec3 p){return noise(p)*.57+noise(p*2.03+7.1)*.28+noise(p*4.07+13.2)*.15;}
 float density(vec3 p){
- float h=clamp((p.y+1.7)/3.6,0.,1.);
- float radius=.3+h*.78;
- vec2 center=vec2(sin(p.y*2.1-time*.24),cos(p.y*1.7-time*.19))*.23*h;
- float shape=1.-smoothstep(radius*.25,radius,length(p.xz-center));
- shape*=smoothstep(-1.8,-1.3,p.y)*(1.-smoothstep(1.,1.9,p.y));
- vec3 q=p*2.45-vec3(0.,time*.4,0.);
- q+=vec3(noise(q*.65+time*.06),noise(q*.65+8.3),noise(q*.65+19.))*1.25;
- float n=fbm(q);
- return shape*smoothstep(.28,.73,n)*1.5;
+ vec3 q=(p-vec3(-1.6,-2.,-1.6))/vec3(3.2,4.,3.2);
+ if(min(q.x,min(q.y,q.z))<0.||max(q.x,max(q.y,q.z))>1.)return 0.;
+ float z=q.z*15.;
+ float z0=floor(z),z1=min(15.,z0+1.);
+ vec2 xy=vec2(.5+q.x*15.,.5+q.y*27.);
+ float a=texture2D(smokeField,vec2((z0*16.+xy.x)/256.,xy.y/28.)).r;
+ float b=texture2D(smokeField,vec2((z1*16.+xy.x)/256.,xy.y/28.)).r;
+ return mix(a,b,fract(z))*2.;
 }
+
 void main(){
  vec2 screen=(uv*2.-1.)*vec2(resolution.x/resolution.y,1.);
  float yaw=orbit.x, pitch=orbit.y;
@@ -78,6 +80,23 @@ void main(){
  float start=max(0.,max(nearV.x,max(nearV.y,nearV.z)));
  float end=min(farV.x,min(farV.y,farV.z));
  vec3 color=vec3(.0196,.0235,.0353);
+ vec3 cubeCenter=vec3(0.,cubeY,0.);
+ vec3 cubeLo=(cubeCenter-vec3(.45)-eye)/ray;
+ vec3 cubeHi=(cubeCenter+vec3(.45)-eye)/ray;
+ vec3 cubeNear=min(cubeLo,cubeHi),cubeFar=max(cubeLo,cubeHi);
+ float cubeStart=max(cubeNear.x,max(cubeNear.y,cubeNear.z));
+ float cubeEnd=min(cubeFar.x,min(cubeFar.y,cubeFar.z));
+ if(cubeEnd>max(cubeStart,0.)&&cubeStart>0.){
+  vec3 hit=eye+ray*cubeStart;
+  vec3 local=hit-cubeCenter;
+  vec3 normal=abs(local.x)>abs(local.y)&&abs(local.x)>abs(local.z)?vec3(sign(local.x),0.,0.):abs(local.y)>abs(local.z)?vec3(0.,sign(local.y),0.):vec3(0.,0.,sign(local.z));
+  vec3 lights=movingLights(hit);
+  float diffuse=.4+.6*max(0.,dot(normal,normalize(vec3(-.6,1.,.7))));
+  float edge=smoothstep(.415,.45,max(abs(local.x)*(abs(normal.x)<.5?1.:0.),max(abs(local.y)*(abs(normal.y)<.5?1.:0.),abs(local.z)*(abs(normal.z)<.5?1.:0.))));
+  color=vec3(.12,.14,.18)*diffuse+lights*.32+edge*vec3(.13,.15,.2);
+  end=min(end,cubeStart);
+ }
+
  if(end>start){
   float stepSize=(end-start)/48.;
   float transmittance=1.;
@@ -118,12 +137,12 @@ uniform float time;
 uniform vec2 orbit;
 uniform float cameraDistance;
 uniform float focal;
+uniform float cubeY;
 uniform vec2 resolution;
 varying float sparkle;
 varying float angle;
 varying float stretch;
 varying vec3 dustTint;
-
 vec3 movingLights(vec3 p){
  vec3 total=vec3(0.);
  for(int j=0;j<4;j++){
@@ -144,14 +163,9 @@ vec3 movingLights(vec3 p){
  return total;
 }
 
+
 void main(){
- float phase=fract(dustSeed.x+time*(.022+dustSeed.w*.026));
- float h=phase*3.8-1.9;
- float a=dustSeed.y*6.283+time*(.1+dustSeed.w*.13)+h*.65;
- float radius=.38+dustSeed.z*.95+(h+1.9)*.08;
- vec3 p=vec3(cos(a)*radius,h,sin(a)*radius);
- p.x+=sin(h*2.1-time*.24)*.23;
- p.z+=cos(h*1.7-time*.19)*.23;
+ vec3 p=dustSeed.xyz;
  dustTint=vec3(.035,.045,.065)+movingLights(p)*1.4;
  vec3 eye=vec3(sin(orbit.x)*cos(orbit.y),sin(orbit.y),cos(orbit.x)*cos(orbit.y))*cameraDistance;
  vec3 forward=normalize(-eye);
@@ -159,13 +173,18 @@ void main(){
  vec3 up=cross(right,forward);
  vec3 delta=p-eye;
  float depth=dot(delta,forward);
- vec2 projected=vec2(dot(delta,right),dot(delta,up))*focal/depth;
- projected.x/=resolution.x/resolution.y;
+ vec2 projected=vec2(dot(delta,right),dot(delta,up))*focal/max(depth,.1);
  gl_Position=vec4(projected,0.,1.);
- gl_PointSize=clamp((1.2+pow(dustSeed.w,3.)*4.5)*(focal/1.75)*4.9/depth,1.3,8.);
- sparkle=sin(phase*3.14159)*(.2+dustSeed.z*.6)*(.75+.25*sin(time*.8+dustSeed.y*23.));
- angle=dustSeed.y*6.283+time*.12;
- stretch=.42+dustSeed.x*.58;
+ gl_PointSize=clamp((1.2+pow(dustSeed.w,3.)*4.5)*(focal/1.75)*4.9/max(depth,.1),1.3,8.);
+ vec3 ray=normalize(delta);
+ vec3 nearCube=(vec3(-.45,cubeY-.45,-.45)-eye)/ray;
+ vec3 farCube=(vec3(.45,cubeY+.45,.45)-eye)/ray;
+ vec3 n=min(nearCube,farCube),f=max(nearCube,farCube);
+ float entry=max(n.x,max(n.y,n.z)),exit=min(f.x,min(f.y,f.z));
+ bool blocked=exit>max(entry,0.)&&entry>0.&&entry<length(delta)-.01;
+ sparkle=depth>.1&&!blocked?(.25+dustSeed.w*.65)*smoothstep(-2.,-1.65,p.y)*(1.-smoothstep(1.6,2.,p.y)):0.;
+ angle=dustSeed.w*6.283+time*.12;
+ stretch=.42+dustSeed.w*.58;
 }
 `;
 const dustFragment=`
@@ -196,6 +215,7 @@ for(let i=0;i<dustData.length;i++){dustRandom=(Math.imul(dustRandom,1664525)+101
 gl.bindBuffer(gl.ARRAY_BUFFER,dustBuffer);gl.bufferData(gl.ARRAY_BUFFER,dustData,gl.STATIC_DRAW);
 const dustAttribute=gl.getAttribLocation(dustProgram,'dustSeed');
 const dustDistance=gl.getUniformLocation(dustProgram,'cameraDistance'),dustFocal=gl.getUniformLocation(dustProgram,'focal');
+const dustCube=gl.getUniformLocation(dustProgram,'cubeY');
 const dustTime=gl.getUniformLocation(dustProgram,'time');
 const dustOrbit=gl.getUniformLocation(dustProgram,'orbit');
 const dustResolution=gl.getUniformLocation(dustProgram,'resolution');
@@ -204,7 +224,7 @@ function drawDust(viewYaw,viewPitch){
  gl.bindBuffer(gl.ARRAY_BUFFER,dustBuffer);
  gl.enableVertexAttribArray(dustAttribute);
  gl.vertexAttribPointer(dustAttribute,4,gl.FLOAT,false,0,0);
- gl.uniform1f(dustTime,clock);
+ gl.uniform1f(dustTime,clock);gl.uniform1f(dustCube,cubePosition);
  gl.uniform1f(dustDistance,distance);gl.uniform1f(dustFocal,lensMm/20);
  gl.uniform2f(dustOrbit,viewYaw,viewPitch);
  gl.uniform2f(dustResolution,canvas.width,canvas.height);
@@ -217,6 +237,137 @@ function drawDust(viewYaw,viewPitch){
  gl.vertexAttribPointer(position,2,gl.FLOAT,false,0,0);
 }
 
+
+
+const NX=16,NY=28,NZ=16,SIZE=NX*NY*NZ;
+const index=(x,y,z)=>x+NX*(y+NY*z);
+let vx=new Float32Array(SIZE),vy=new Float32Array(SIZE),vz=new Float32Array(SIZE),smoke=new Float32Array(SIZE);
+let nextX=new Float32Array(SIZE),nextY=new Float32Array(SIZE),nextZ=new Float32Array(SIZE),nextSmoke=new Float32Array(SIZE);
+let pressure=new Float32Array(SIZE),pressureNext=new Float32Array(SIZE);
+const divergence=new Float32Array(SIZE),solid=new Uint8Array(SIZE);
+const atlas=new Uint8Array(256*28*4);
+const dx=3.2/15,dy=4/27,dz=3.2/15;
+let simTime=0,cubePosition=-.8,cubeVelocity=.4;
+const cubeUniform=gl.getUniformLocation(program,'cubeY');
+const fieldUniform=gl.getUniformLocation(program,'smokeField');
+const field=gl.createTexture();
+gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,field);
+gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,256,28,0,gl.RGBA,gl.UNSIGNED_BYTE,atlas);
+gl.uniform1i(fieldUniform,0);
+function sample(a,x,y,z){
+ x=Math.max(0,Math.min(14.999,x));y=Math.max(0,Math.min(26.999,y));z=Math.max(0,Math.min(14.999,z));
+ const ix=x|0,iy=y|0,iz=z|0,fx=x-ix,fy=y-iy,fz=z-iz;
+ let value=0;
+ for(let k=0;k<2;k++)for(let j=0;j<2;j++)for(let i=0;i<2;i++)
+ value+=a[index(ix+i,iy+j,iz+k)]*(i?fx:1-fx)*(j?fy:1-fy)*(k?fz:1-fz);
+ return value;
+}
+function flowAt(x,y,z){const gx=(x+1.6)/dx,gy=(y+2)/dy,gz=(z+1.6)/dz;return [sample(vx,gx,gy,gz),sample(vy,gx,gy,gz),sample(vz,gx,gy,gz)];}
+function advance(dt){
+ simTime+=dt;
+ const phase=(simTime*.4)%3.2;
+ cubePosition=phase<1.6?-.8+phase:2.4-phase;
+ cubeVelocity=phase<1.6?.4:-.4;
+ for(let z=0;z<NZ;z++)for(let y=0;y<NY;y++)for(let x=0;x<NX;x++){
+  const n=index(x,y,z),wx=x*dx-1.6,wy=y*dy-2,wz=z*dz-1.6;
+  solid[n]=Math.abs(wx)<.45&&Math.abs(wy-cubePosition)<.45&&Math.abs(wz)<.45?1:0;
+  if(solid[n]){vx[n]=0;vy[n]=cubeVelocity;vz[n]=0;smoke[n]=0;continue;}
+  vy[n]+=smoke[n]*.85*dt;
+  const radial=wx*wx+wz*wz;
+  if(y<3&&radial<.24){
+   smoke[n]=Math.min(1,smoke[n]+dt*2.2*(1-radial/.24));
+   vy[n]=Math.max(vy[n],.55);
+   vx[n]+=Math.sin(simTime*1.7+wz*6)*dt*.08;
+   vz[n]+=Math.cos(simTime*1.3+wx*6)*dt*.08;
+  }
+ }
+ // Semi-Lagrangian transport of velocity and density.
+ for(let z=0;z<NZ;z++)for(let y=0;y<NY;y++)for(let x=0;x<NX;x++){
+  const n=index(x,y,z);
+  if(solid[n]){nextX[n]=nextZ[n]=nextSmoke[n]=0;nextY[n]=cubeVelocity;continue;}
+  const bx=x-vx[n]*dt/dx,by=y-vy[n]*dt/dy,bz=z-vz[n]*dt/dz;
+  nextX[n]=sample(vx,bx,by,bz)*.998;nextY[n]=sample(vy,bx,by,bz)*.998;nextZ[n]=sample(vz,bx,by,bz)*.998;
+  nextSmoke[n]=sample(smoke,bx,by,bz)*Math.exp(-dt*.12);
+ }
+ [vx,nextX]=[nextX,vx];[vy,nextY]=[nextY,vy];[vz,nextZ]=[nextZ,vz];[smoke,nextSmoke]=[nextSmoke,smoke];
+ pressure.fill(0);
+ // Divergence and pressure projection bend the flow around the solid cube.
+ for(let z=1;z<NZ-1;z++)for(let y=1;y<NY-1;y++)for(let x=1;x<NX-1;x++){
+  const n=index(x,y,z);
+  divergence[n]=solid[n]?0:(vx[n+1]-vx[n-1])/(2*dx)+(vy[n+NX]-vy[n-NX])/(2*dy)+(vz[n+NX*NY]-vz[n-NX*NY])/(2*dz);
+ }
+ const ax=1/(dx*dx),ay=1/(dy*dy),az=1/(dz*dz);
+ const offsets=[1,-1,NX,-NX,NX*NY,-NX*NY],weights=[ax,ax,ay,ay,az,az];
+ for(let iteration=0;iteration<10;iteration++){
+  for(let z=1;z<NZ-1;z++)for(let y=1;y<NY-1;y++)for(let x=1;x<NX-1;x++){
+   const n=index(x,y,z);if(solid[n]){pressureNext[n]=0;continue;}
+   let sum=0,weight=0;
+   for(let k=0;k<6;k++){const offset=offsets[k],w=weights[k];
+    if(!solid[n+offset]){sum+=pressure[n+offset]*w;weight+=w;}
+   }
+   pressureNext[n]=weight?(sum-divergence[n])/weight:0;
+  }
+  [pressure,pressureNext]=[pressureNext,pressure];
+ }
+ for(let z=1;z<NZ-1;z++)for(let y=1;y<NY-1;y++)for(let x=1;x<NX-1;x++){
+  const n=index(x,y,z);if(solid[n])continue;
+  const p=pressure[n];
+  vx[n]-=((solid[n+1]?p:pressure[n+1])-(solid[n-1]?p:pressure[n-1]))/(2*dx);
+  vy[n]-=((solid[n+NX]?p:pressure[n+NX])-(solid[n-NX]?p:pressure[n-NX]))/(2*dy);
+  vz[n]-=((solid[n+NX*NY]?p:pressure[n+NX*NY])-(solid[n-NX*NY]?p:pressure[n-NX*NY]))/(2*dz);
+  if(solid[n+1]&&vx[n]>0||solid[n-1]&&vx[n]<0)vx[n]=0;
+  if(solid[n+NX]||solid[n-NX])vy[n]=cubeVelocity;
+  if(solid[n+NX*NY]&&vz[n]>0||solid[n-NX*NY]&&vz[n]<0)vz[n]=0;
+  vx[n]=Math.max(-1.5,Math.min(1.5,vx[n]));vy[n]=Math.max(-1.5,Math.min(1.5,vy[n]));vz[n]=Math.max(-1.5,Math.min(1.5,vz[n]));
+ }
+ for(let z=0;z<NZ;z++)for(let y=0;y<NY;y++)for(let x=0;x<NX;x++){
+  const n=index(x,y,z);
+  if(x===0||x===NX-1)vx[n]=0;if(z===0||z===NZ-1)vz[n]=0;
+  if(y===NY-1)smoke[n]=0;
+  const a=(x+z*NX+y*256)*4;
+  atlas[a]=Math.min(255,Math.round(smoke[n]*255));atlas[a+3]=255;
+ }
+ gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,field);
+ gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,256,28,gl.RGBA,gl.UNSIGNED_BYTE,atlas);
+ updateDust(dt);
+}
+const dustVelocity=new Float32Array(180*3);
+function resetDust(i,initial){
+ const n=i*4,v=i*3;
+ dustData[n]=(Math.random()-.5)*.75;dustData[n+1]=initial?-1.8+Math.random()*3.6:-1.85;dustData[n+2]=(Math.random()-.5)*.75;
+ dustVelocity[v]=(Math.random()-.5)*.1;dustVelocity[v+1]=.25+Math.random()*.2;dustVelocity[v+2]=(Math.random()-.5)*.1;
+}
+for(let i=0;i<180;i++)resetDust(i,true);
+function updateDust(dt){
+ for(let i=0;i<180;i++){
+  const n=i*4,v=i*3;
+  let x=dustData[n],y=dustData[n+1],z=dustData[n+2];
+  const flow=flowAt(x,y,z),drag=1-Math.exp(-dt*2.);
+  dustVelocity[v]+=(flow[0]-dustVelocity[v])*drag;
+  dustVelocity[v+1]+=(flow[1]+.12-dustVelocity[v+1])*drag;
+  dustVelocity[v+2]+=(flow[2]-dustVelocity[v+2])*drag;
+  x+=dustVelocity[v]*dt;y+=dustVelocity[v+1]*dt;z+=dustVelocity[v+2]*dt;
+  const local=[x,y-cubePosition,z];
+  if(Math.abs(local[0])<.47&&Math.abs(local[1])<.47&&Math.abs(local[2])<.47){
+   let axis=0;if(Math.abs(local[1])>Math.abs(local[axis]))axis=1;if(Math.abs(local[2])>Math.abs(local[axis]))axis=2;
+   const sign=local[axis]>=0?1:-1;
+   local[axis]=sign*.475;
+   const surface=axis===1?cubeVelocity:0;
+   dustVelocity[v+axis]=surface+sign*(Math.abs(dustVelocity[v+axis]-surface)*.35+.14);
+   // A small tangential impulse scatters grains along the moving face.
+   dustVelocity[v]+=(Math.random()-.5)*.18;dustVelocity[v+2]+=(Math.random()-.5)*.18;
+   x=local[0];y=local[1]+cubePosition;z=local[2];
+  }
+  dustData[n]=x;dustData[n+1]=y;dustData[n+2]=z;
+  if(y>1.95||y< -1.95||Math.abs(x)>1.55||Math.abs(z)>1.55)resetDust(i,false);
+ }
+ gl.bindBuffer(gl.ARRAY_BUFFER,dustBuffer);gl.bufferSubData(gl.ARRAY_BUFFER,0,dustData);
+ gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.vertexAttribPointer(position,2,gl.FLOAT,false,0,0);
+}
 
 let yaw=.5,pitch=.08,targetYaw=yaw,targetPitch=pitch,clock=0,last=0,raf=0,lastDraw=0;
 let distance=4.9,targetDistance=4.9,lensMm=35;
@@ -246,7 +397,7 @@ function release(e){pointers.delete(e.pointerId);pinchDistance=separation();}
 canvas.addEventListener('pointerup',release);canvas.addEventListener('pointercancel',release);canvas.addEventListener('lostpointercapture',release);
 canvas.addEventListener('wheel',e=>{e.preventDefault();targetDistance=Math.max(2.2,Math.min(10,targetDistance*Math.exp(e.deltaY*.001)));},{passive:false});
 function frame(now){if(document.hidden||gl.isContextLost()){raf=0;return;}if(last)clock+=Math.min((now-last)/1000,.08);last=now;
- if(now-lastDraw>=33){lastDraw=now;distance+=(targetDistance-distance)*.15;yaw+=(targetYaw-yaw)*.12;pitch+=(targetPitch-pitch)*.12;gl.uniform1f(uTime,clock);gl.uniform1f(uDistance,distance);gl.uniform1f(uFocal,lensMm/20);gl.uniform2f(uOrbit,yaw+Math.sin(clock*.08)*.12,pitch);gl.drawArrays(gl.TRIANGLES,0,6);drawDust(yaw+Math.sin(clock*.08)*.12,pitch);}raf=requestAnimationFrame(frame);}
+ if(now-lastDraw>=33){const dt=lastDraw?Math.min((now-lastDraw)/1000,.05):.033;lastDraw=now;advance(dt);gl.uniform1f(cubeUniform,cubePosition);distance+=(targetDistance-distance)*.15;yaw+=(targetYaw-yaw)*.12;pitch+=(targetPitch-pitch)*.12;gl.uniform1f(uTime,clock);gl.uniform1f(uDistance,distance);gl.uniform1f(uFocal,lensMm/20);gl.uniform2f(uOrbit,yaw+Math.sin(clock*.08)*.12,pitch);gl.drawArrays(gl.TRIANGLES,0,6);drawDust(yaw+Math.sin(clock*.08)*.12,pitch);}raf=requestAnimationFrame(frame);}
 document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(raf);raf=0;}else{last=0;if(!raf)raf=requestAnimationFrame(frame);}});
 canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();cancelAnimationFrame(raf);raf=0;});
 canvas.addEventListener('webglcontextrestored',()=>location.reload());
