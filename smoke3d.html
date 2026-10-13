@@ -4,7 +4,7 @@
 label{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 input[type=range]{display:block;width:100%;margin:0;accent-color:#bda0ff;touch-action:pan-x}
 .hint{text-align:center;font-size:10px;letter-spacing:.04em;opacity:.6;margin-top:10px}#error{position:fixed;inset:0;display:none;place-items:center;padding:24px;text-align:center}</style></head>
-<body><canvas id="view" aria-label="衝突する3Dの煙、ダスト、上下するキューブ。ドラッグで回転、ピンチで前後移動できます"></canvas><aside><label for="lens">焦点距離 <output id="lensValue" for="lens">35 mm</output></label><input id="lens" type="range" min="18" max="100" step="1" value="35" aria-label="レンズの焦点距離"><div class="hint">煙・ダストが上下するキューブに衝突 · ドラッグ／ピンチ</div></aside><div id="error"></div>
+<body><canvas id="view" aria-label="乱流の3D煙、衝突するダスト、上下するキューブ。ドラッグで回転、ピンチで前後移動できます"></canvas><aside><label for="lens">焦点距離 <output id="lensValue" for="lens">35 mm</output></label><input id="lens" type="range" min="18" max="100" step="1" value="35" aria-label="レンズの焦点距離"><div class="hint">乱流の煙 · ダストがキューブに衝突 · ドラッグ／ピンチ</div></aside><div id="error"></div>
 <script>
 'use strict';
 (function(){
@@ -63,7 +63,8 @@ float density(vec3 p){
  vec2 xy=vec2(.5+q.x*15.,.5+q.y*27.);
  float a=texture2D(smokeField,vec2((z0*16.+xy.x)/256.,xy.y/28.)).r;
  float b=texture2D(smokeField,vec2((z1*16.+xy.x)/256.,xy.y/28.)).r;
- return mix(a,b,fract(z))*2.;
+ float detail=fbm(p*5.5-vec3(time*.12,time*.34,-time*.09));
+ return mix(a,b,fract(z))*(.7+detail*1.8);
 }
 
 void main(){
@@ -274,7 +275,14 @@ function advance(dt){
  cubeVelocity=phase<1.6?.4:-.4;
  for(let z=0;z<NZ;z++)for(let y=0;y<NY;y++)for(let x=0;x<NX;x++){
   const n=index(x,y,z),wx=x*dx-1.6,wy=y*dy-2,wz=z*dz-1.6;
-  solid[n]=Math.abs(wx)<.45&&Math.abs(wy-cubePosition)<.45&&Math.abs(wz)<.45?1:0;
+  solid[n]=0;
+  // Divergence-free curl forcing: the smoke swirls freely through the cube.
+  const a=wx*2.2+simTime*.63,b=wy*2.7-simTime*.81;
+  const d=wy*3.1+simTime*.47,e=wz*2.3-simTime*.59;
+  const strength=.34;
+  vx[n]+=strength*2.7*Math.sin(a)*Math.cos(b)*dt;
+  vy[n]+=strength*(2.3*Math.sin(d)*Math.cos(e)-2.2*Math.cos(a)*Math.sin(b))*dt;
+  vz[n]-=strength*3.1*Math.cos(d)*Math.sin(e)*dt;
   if(solid[n]){vx[n]=0;vy[n]=cubeVelocity;vz[n]=0;smoke[n]=0;continue;}
   vy[n]+=smoke[n]*.85*dt;
   const radial=wx*wx+wz*wz;
@@ -295,7 +303,7 @@ function advance(dt){
  }
  [vx,nextX]=[nextX,vx];[vy,nextY]=[nextY,vy];[vz,nextZ]=[nextZ,vz];[smoke,nextSmoke]=[nextSmoke,smoke];
  pressure.fill(0);
- // Divergence and pressure projection bend the flow around the solid cube.
+ // Pressure projection keeps the turbulent smoke flow approximately divergence-free.
  for(let z=1;z<NZ-1;z++)for(let y=1;y<NY-1;y++)for(let x=1;x<NX-1;x++){
   const n=index(x,y,z);
   divergence[n]=solid[n]?0:(vx[n+1]-vx[n-1])/(2*dx)+(vy[n+NX]-vy[n-NX])/(2*dy)+(vz[n+NX*NY]-vz[n-NX*NY])/(2*dz);
