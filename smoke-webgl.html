@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#050609"><title>Volumetric Smoke — WebGL</title>
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050609;color:#dde2eb;font-family:system-ui,sans-serif}canvas{display:block;width:100%;height:100%;touch-action:none}aside{position:fixed;bottom:calc(15px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(360px,calc(100% - 32px));padding:14px 16px;border:1px solid #ffffff20;border-radius:16px;background:#090b13b8;backdrop-filter:blur(12px);font-size:12px;box-sizing:border-box}
+label{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+input[type=range]{display:block;width:100%;margin:0;accent-color:#bda0ff;touch-action:pan-x}
+.hint{text-align:center;font-size:10px;letter-spacing:.04em;opacity:.6;margin-top:10px}#error{position:fixed;inset:0;display:none;place-items:center;padding:24px;text-align:center}
+header{position:fixed;top:calc(18px + env(safe-area-inset-top));left:20px;pointer-events:none}header strong{font-size:13px;letter-spacing:.18em}header p{font-size:11px;color:#abb0c5;margin:6px 0}aside{width:min(380px,calc(100% - 32px))}.row{display:flex;gap:8px;align-items:center;margin:12px 0 0}.row label{margin:0;flex:1}select,button{color:#e7e5f5;background:#252637;border:1px solid #ffffff30;border-radius:8px;padding:8px;font:inherit;min-height:36px}button{cursor:pointer}button:focus-visible,select:focus-visible,input:focus-visible,canvas:focus-visible{outline:2px solid #bda0ff;outline-offset:3px}.row button{flex:1}details summary{cursor:pointer;padding:8px 0}#error{background:#090b13ed;z-index:10}#error button{margin:12px}a{color:#cfb9ff}
+</style></head>
+<body>
+<canvas id="view" tabindex="0" aria-label="紫と緑の光が透ける立体的な煙。矢印キーで回転、プラスとマイナスで前後移動できます"></canvas>
+<header><strong>VOLUMETRIC / SMOKE</strong><p>WebGL · 立体的な煙と光</p></header>
+<aside aria-label="描画とカメラの設定">
+<label for="lens">焦点距離 <output id="lensValue" for="lens">35 mm</output></label>
+<input id="lens" type="range" min="18" max="100" step="1" value="35">
+<details><summary>画質・煙の調整</summary>
+<label for="density">煙の濃さ <output id="densityValue" for="density">1.0</output></label>
+<input id="density" type="range" min="0.2" max="2" step="0.1" value="1">
+<div class="row"><label for="quality">画質</label><select id="quality"><option value="low">軽量</option><option value="medium" selected>標準</option><option value="high">高画質</option></select></div>
+<p class="hint">高画質は負荷が増えます。端末に合わせて切り替えられます。</p></details>
+<div class="row"><button id="pause" type="button" aria-pressed="false">一時停止</button><button id="reset" type="button">カメラを戻す</button></div>
+<div class="hint">ドラッグ：回転 · ピンチ／ホイール：前後移動<br>キーボード：矢印キー・＋／−</div>
+</aside><div id="error" role="alert"></div>
+<script>
+'use strict';
+(function(){
+const canvas=document.getElementById('view');
+const gl=canvas.getContext('webgl',{alpha:false,antialias:false,depth:false,stencil:false,powerPreference:'high-performance'});
+function fail(message){const e=document.getElementById('error');e.textContent=message;e.style.display='grid';}
+if(!gl){fail('このブラウザではWebGLを利用できません。');return;}
+const vertex=`
+attribute vec2 position;
+varying vec2 uv;
+void main(){uv=position*.5+.5;gl_Position=vec4(position,0.,1.);}
+`;
+const fragment=`
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+varying vec2 uv;
+uniform vec2 resolution;
+uniform float time;
+uniform vec2 orbit;
+uniform float cameraDistance;
+uniform float focal;
+uniform sampler2D smokeField;
+uniform float cubeY;
+uniform float densityScale;
+uniform float marchSteps;
+
+vec3 movingLights(vec3 p){
+ vec3 total=vec3(0.);
+ for(int j=0;j<4;j++){
+  float id=float(j);
+  float speed=.21+id*.113;
+  float t=time*speed+id*1.9;
+  vec3 origin=vec3(mod(id,2.)<.5?-2.7:2.7,1.9-id*.38,id<1.5?1.5:-1.6);
+  vec3 target=vec3(sin(t)*1.75,sin(t*.79+id)*1.7,cos(t*.67+id)*1.4);
+  vec3 axis=normalize(target-origin);
+  vec3 delta=p-origin;
+  float distanceToLight=length(delta);
+  float cone=dot(delta/max(distanceToLight,.001),axis);
+  float beam=smoothstep(.94,.985,cone);
+  float attenuation=1./(1.+distanceToLight*distanceToLight*.085);
+  vec3 tint=mod(id,2.)<.5?vec3(.12,1.,.27):vec3(.72,.12,1.);
+  total+=tint*beam*attenuation*2.3;
+ }
+ return total;
+}
+
+float hash(vec3 p){p=fract(p*.1031);p+=dot(p,p.yzx+33.33);return fract((p.x+p.y)*p.z);}
+float noise(vec3 p){
+ vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+ return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),
+ mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);
+}
+float fbm(vec3 p){return noise(p)*.57+noise(p*2.03+7.1)*.28+noise(p*4.07+13.2)*.15;}
+float fieldDensity(vec3 p){
+ vec3 q=(p-vec3(-3.,-2.5,-3.))/vec3(6.,5.,6.);
+ if(min(q.x,min(q.y,q.z))<0.||max(q.x,max(q.y,q.z))>1.)return 0.;
+ float z=q.z*15.;
+ float z0=floor(z),z1=min(15.,z0+1.);
+ vec2 xy=vec2(.5+q.x*15.,.5+q.y*27.);
+ float a=texture2D(smokeField,vec2((z0*16.+xy.x)/256.,xy.y/28.)).r;
+ float b=texture2D(smokeField,vec2((z1*16.+xy.x)/256.,xy.y/28.)).r;
+ vec3 edge=smoothstep(vec3(0.),vec3(.12,.08,.12),q)*(1.-smoothstep(vec3(.88,.88,.88),vec3(1.),q));
+ return mix(a,b,fract(z))*edge.x*edge.y*edge.z*densityScale;
+}
+float density(vec3 p){
+ vec3 drift=vec3(time*.12,time*.34,-time*.09);
+ vec3 warp=vec3(noise(p*1.4-drift),noise(p*1.4+8.-drift),noise(p*1.4+17.-drift))-.5;
+ float detail=fbm(p*3.8+warp*1.4-drift);
+ return fieldDensity(p)*smoothstep(.24,.75,detail)*2.4;
+}
+
+// Beer-Lambert attenuation from the sample towards each moving light.
+// Shadow probes use the coarse fluid field to keep mobile cost bounded.
+vec3 volumeLighting(vec3 p,vec3 viewRay){
+ vec3 result=vec3(.065,.080,.12);
+ for(int j=0;j<4;j++){
+  float id=float(j),t=time*(.21+id*.113)+id*1.9;
+  vec3 origin=vec3(mod(id,2.)<.5?-2.7:2.7,1.9-id*.38,id<1.5?1.5:-1.6);
+  vec3 target=vec3(sin(t)*1.75,sin(t*.79+id)*1.7,cos(t*.67+id)*1.4);
+  vec3 delta=origin-p;
+  float dist=length(delta);vec3 direction=delta/max(dist,.001);
+  float beam=smoothstep(.70,.97,dot(-direction,normalize(target-origin)));
+  if(beam>.005){
+   float opticalDepth=0.;float stride=min(dist,3.5)/4.;
+   for(int k=0;k<4;k++)opticalDepth+=fieldDensity(p+direction*(float(k)+.5)*stride)*stride;
+   vec3 bn=(vec3(-.45,cubeY-.45,-.45)-p)/(direction+vec3(.00001));
+   vec3 bf=(vec3(.45,cubeY+.45,.45)-p)/(direction+vec3(.00001));
+   vec3 n=min(bn,bf),f=max(bn,bf);
+   float entry=max(n.x,max(n.y,n.z)),exit=min(f.x,min(f.y,f.z));
+   float visibility=exit>max(entry,.01)&&entry<dist?0.:1.;
+   float mu=dot(viewRay,-direction);
+   float phase=.48+.52*(1.-.32*.32)/pow(max(.12,1.+.32*.32-2.*.32*mu),1.5);
+   vec3 tint=mod(id,2.)<.5?vec3(.15,1.,.34):vec3(.70,.18,1.);
+   result+=tint*beam*(2.8/(1.+dist*dist*.13))*exp(-opticalDepth*1.8)*phase*visibility;
+  }
+ }
+ return result;
+}
+
+void main(){
+ vec2 screen=(uv*2.-1.)*vec2(resolution.x/resolution.y,1.);
+ float yaw=orbit.x, pitch=orbit.y;
+ vec3 eye=vec3(sin(yaw)*cos(pitch),sin(pitch),cos(yaw)*cos(pitch))*cameraDistance;
+ vec3 forward=normalize(-eye);
+ vec3 right=normalize(cross(forward,vec3(0,1,0)));
+ vec3 up=cross(right,forward);
+ vec3 ray=normalize(forward*focal+right*screen.x+up*screen.y);
+ vec3 lo=(-vec3(3.,2.5,3.)-eye)/(ray+vec3(.000001));
+ vec3 hi=(vec3(3.,2.5,3.)-eye)/(ray+vec3(.000001));
+ vec3 nearV=min(lo,hi),farV=max(lo,hi);
+ float start=max(0.,max(nearV.x,max(nearV.y,nearV.z)));
+ float end=min(farV.x,min(farV.y,farV.z));
+ vec3 color=vec3(.0015,.002,.004);
+ vec3 cubeCenter=vec3(0.,cubeY,0.);
+ vec3 cubeLo=(cubeCenter-vec3(.45)-eye)/(ray+vec3(.000001));
+ vec3 cubeHi=(cubeCenter+vec3(.45)-eye)/(ray+vec3(.000001));
+ vec3 cubeNear=min(cubeLo,cubeHi),cubeFar=max(cubeLo,cubeHi);
+ float cubeStart=max(cubeNear.x,max(cubeNear.y,cubeNear.z));
+ float cubeEnd=min(cubeFar.x,min(cubeFar.y,cubeFar.z));
+ if(cubeEnd>max(cubeStart,0.)&&cubeStart>0.){
+  vec3 hit=eye+ray*cubeStart;
+  vec3 local=hit-cubeCenter;
+  vec3 normal=abs(local.x)>abs(local.y)&&abs(local.x)>abs(local.z)?vec3(sign(local.x),0.,0.):abs(local.y)>abs(local.z)?vec3(0.,sign(local.y),0.):vec3(0.,0.,sign(local.z));
+  vec3 lights=movingLights(hit);
+  float diffuse=.4+.6*max(0.,dot(normal,normalize(vec3(-.6,1.,.7))));
+  float edge=smoothstep(.415,.45,max(abs(local.x)*(abs(normal.x)<.5?1.:0.),max(abs(local.y)*(abs(normal.y)<.5?1.:0.),abs(local.z)*(abs(normal.z)<.5?1.:0.))));
+  color=vec3(.12,.14,.18)*diffuse+lights*.32+edge*vec3(.13,.15,.2);
+  end=min(end,cubeStart);
+ }
+
+ if(end>start){
+  float stepSize=(end-start)/marchSteps;
+  float transmittance=1.;
+  vec3 accumulated=vec3(0.);
+  vec3 light=normalize(vec3(-.65,1.,.7));
+  for(int i=0;i<88;i++){
+   if(float(i)>=marchSteps)break;
+   vec3 p=eye+ray*(start+(float(i)+.5)*stepSize);
+   float d=density(p);
+   if(d>.01){
+    vec3 tint=volumeLighting(p,ray);
+    float alpha=1.-exp(-d*stepSize*1.8);
+    accumulated+=transmittance*alpha*tint;
+    transmittance*=1.-alpha;
+    if(transmittance<.025)break;
+   }
+  }
+  color=accumulated+color*transmittance;
+ }
+ color*=1.-.16*dot(uv-.5,uv-.5);
+ color=1.-exp(-color*1.35);
+ color=pow(max(color,vec3(0.)),vec3(1./2.2));
+ gl_FragColor=vec4(color,1.);
+}
+`;
+function shader(type,source){const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s;}
+let program;
+try{program=gl.createProgram();gl.attachShader(program,shader(gl.VERTEX_SHADER,vertex));gl.attachShader(program,shader(gl.FRAGMENT_SHADER,fragment));gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(program));}catch(e){console.error(e);fail('3D描画を開始できませんでした。');return;}
+gl.useProgram(program);
+const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
+const position=gl.getAttribLocation(program,'position');gl.enableVertexAttribArray(position);gl.vertexAttribPointer(position,2,gl.FLOAT,false,0,0);
+const uDistance=gl.getUniformLocation(program,'cameraDistance'),uFocal=gl.getUniformLocation(program,'focal');
+const uTime=gl.getUniformLocation(program,'time'),uResolution=gl.getUniformLocation(program,'resolution'),uOrbit=gl.getUniformLocation(program,'orbit');
+
+const dustVertex=`
+precision mediump float;
+attribute vec4 dustSeed;
+uniform float time;
+uniform vec2 orbit;
+uniform float cameraDistance;
+uniform float focal;
+uniform float cubeY;
+uniform vec2 resolution;
+uniform sampler2D smokeField;
+uniform float densityScale;
+varying float sparkle;
+varying float angle;
+varying float stretch;
+varying vec3 dustTint;
+vec3 movingLights(vec3 p){
+ vec3 total=vec3(0.);
+ for(int j=0;j<4;j++){
+  float id=float(j);
+  float speed=.21+id*.113;
+  float t=time*speed+id*1.9;
+  vec3 origin=vec3(mod(id,2.)<.5?-2.7:2.7,1.9-id*.38,id<1.5?1.5:-1.6);
+  vec3 target=vec3(sin(t)*1.75,sin(t*.79+id)*1.7,cos(t*.67+id)*1.4);
+  vec3 axis=normalize(target-origin);
+  vec3 delta=p-origin;
+  float distanceToLight=length(delta);
+  float cone=dot(delta/max(distanceToLight,.001),axis);
+  float beam=smoothstep(.94,.985,cone);
+  float attenuation=1./(1.+distanceToLight*distanceToLight*.085);
+  vec3 tint=mod(id,2.)<.5?vec3(.12,1.,.27):vec3(.72,.12,1.);
+  total+=tint*beam*attenuation*2.3;
+ }
+ return total;
+}
+
+
+void main(){
+ vec3 p=dustSeed.xyz;
+ dustTint=vec3(.035,.045,.065)+movingLights(p)*1.4;
+ vec3 eye=vec3(sin(orbit.x)*cos(orbit.y),sin(orbit.y),cos(orbit.x)*cos(orbit.y))*cameraDistance;
+ vec3 forward=normalize(-eye);
+ vec3 right=normalize(cross(forward,vec3(0,1,0)));
+ vec3 up=cross(right,forward);
+ vec3 delta=p-eye;
+ float depth=dot(delta,forward);
+ vec2 projected=vec2(dot(delta,right),dot(delta,up))*focal/max(depth,.1);
+ gl_Position=vec4(projected*vec2(resolution.y/resolution.x,1.),0.,1.);
+ gl_PointSize=clamp((1.2+pow(dustSeed.w,3.)*4.5)*(focal/1.75)*4.9/max(depth,.1),1.3,8.);
+ vec3 ray=normalize(delta);
+ vec3 nearCube=(vec3(-.45,cubeY-.45,-.45)-eye)/(ray+vec3(.000001));
+ vec3 farCube=(vec3(.45,cubeY+.45,.45)-eye)/(ray+vec3(.000001));
+ vec3 n=min(nearCube,farCube),f=max(nearCube,farCube);
+ float entry=max(n.x,max(n.y,n.z)),exit=min(f.x,min(f.y,f.z));
+ bool blocked=exit>max(entry,0.)&&entry>0.&&entry<length(delta)-.01;
+ sparkle=depth>.1&&!blocked?(.25+dustSeed.w*.65)*smoothstep(-2.,-1.65,p.y)*(1.-smoothstep(1.6,2.,p.y)):0.;
+ float optical=0.;
+ for(int k=0;k<6;k++){
+  vec3 q=(mix(eye,p,(float(k)+.5)/6.)+vec3(3.,2.5,3.))/vec3(6.,5.,6.);
+  if(min(q.x,min(q.y,q.z))>0.&&max(q.x,max(q.y,q.z))<1.){
+   float slice=floor(q.z*15.);
+   optical+=texture2D(smokeField,vec2((slice*16.+.5+q.x*15.)/256.,(.5+q.y*27.)/28.)).r;
+  }
+ }
+ sparkle*=exp(-optical*length(delta)/6.*densityScale*1.8);
+ angle=dustSeed.w*6.283+time*.12;
+ stretch=.42+dustSeed.w*.58;
+}
+`;
+const dustFragment=`
+precision mediump float;
+varying float sparkle;
+varying float angle;
+varying float stretch;
+varying vec3 dustTint;
+void main(){
+ vec2 p=gl_PointCoord*2.-1.;
+ p=mat2(cos(angle),-sin(angle),sin(angle),cos(angle))*p;
+ float r=length(p*vec2(1.,1./stretch));
+ float alpha=(1.-smoothstep(.15,1.,r))*sparkle;
+ gl_FragColor=vec4(dustTint,alpha);
+}
+`;
+const dustProgram=gl.createProgram();
+try{
+ gl.attachShader(dustProgram,shader(gl.VERTEX_SHADER,dustVertex));
+ gl.attachShader(dustProgram,shader(gl.FRAGMENT_SHADER,dustFragment));
+ gl.linkProgram(dustProgram);
+ if(!gl.getProgramParameter(dustProgram,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(dustProgram));
+}catch(e){console.error(e);fail('ダストの描画を開始できませんでした。');return;}
+const dustBuffer=gl.createBuffer();
+const dustData=new Float32Array(180*4);
+let dustRandom=7319;
+for(let i=0;i<dustData.length;i++){dustRandom=(Math.imul(dustRandom,1664525)+1013904223)|0;dustData[i]=(dustRandom>>>0)/4294967296;}
+gl.bindBuffer(gl.ARRAY_BUFFER,dustBuffer);gl.bufferData(gl.ARRAY_BUFFER,dustData,gl.STATIC_DRAW);
+const dustAttribute=gl.getAttribLocation(dustProgram,'dustSeed');
+const dustDistance=gl.getUniformLocation(dustProgram,'cameraDistance'),dustFocal=gl.getUniformLocation(dustProgram,'focal');
+const dustCube=gl.getUniformLocation(dustProgram,'cubeY');
+const dustTime=gl.getUniformLocation(dustProgram,'time');
+const dustOrbit=gl.getUniformLocation(dustProgram,'orbit');
+const dustResolution=gl.getUniformLocation(dustProgram,'resolution');
+function drawDust(viewYaw,viewPitch){
+ gl.useProgram(dustProgram);
+ gl.bindBuffer(gl.ARRAY_BUFFER,dustBuffer);
+ gl.enableVertexAttribArray(dustAttribute);
+ gl.vertexAttribPointer(dustAttribute,4,gl.FLOAT,false,0,0);
+ gl.uniform1i(gl.getUniformLocation(dustProgram,'smokeField'),0);gl.uniform1f(gl.getUniformLocation(dustProgram,'densityScale'),densityScale);
+ gl.uniform1f(dustTime,clock);gl.uniform1f(dustCube,cubePosition);
+ gl.uniform1f(dustDistance,distance);gl.uniform1f(dustFocal,lensMm/20);
+ gl.uniform2f(dustOrbit,viewYaw,viewPitch);
+ gl.uniform2f(dustResolution,canvas.width,canvas.height);
+ gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE);
+ gl.drawArrays(gl.POINTS,0,180);
+ gl.disable(gl.BLEND);
+ gl.useProgram(program);
+ gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
+ gl.enableVertexAttribArray(position);
+ gl.vertexAttribPointer(position,2,gl.FLOAT,false,0,0);
+}
+
+
+
+const NX=16,NY=28,NZ=16,SIZE=NX*NY*NZ;
+const index=(x,y,z)=>x+NX*(y+NY*z);
+let vx=new Float32Array(SIZE),vy=new Float32Array(SIZE),vz=new Float32Array(SIZE),smoke=new Float32Array(SIZE);
+let nextX=new Float32Array(SIZE),nextY=new Float32Array(SIZE),nextZ=new Float32Array(SIZE),nextSmoke=new Float32Array(SIZE);
+let pressure=new Float32Array(SIZE),pressureNext=new Float32Array(SIZE);
+const divergence=new Float32Array(SIZE),solid=new Uint8Array(SIZE);
+const atlas=new Uint8Array(256*28*4);
+const dx=6/15,dy=5/27,dz=6/15;
+// Seed a broad plume so the first frame already contains smoke.
+for(let z=0;z<NZ;z++)for(let y=0;y<NY;y++)for(let x=0;x<NX;x++){
+ const wx=x*dx-3,wy=y*dy-2.5,wz=z*dz-3;
+ smoke[index(x,y,z)]=Math.exp(-(wx*wx+wz*wz)/2.5)*(.25+.22*Math.sin(wx*3.+wy*2.+wz*3.)**2)*(1-y/(NY-1));
+}
+let simTime=0,cubePosition=-.8,cubeVelocity=.4;
+const cubeUniform=gl.getUniformLocation(program,'cubeY');
+const fieldUniform=gl.getUniformLocation(program,'smokeField');
+const field=gl.createTexture();
+gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,field);
+gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,256,28,0,gl.RGBA,gl.UNSIGNED_BYTE,atlas);
+gl.uniform1i(fieldUniform,0);
+function sample(a,x,y,z){
+ x=Math.max(0,Math.min(14.999,x));y=Math.max(0,Math.min(26.999,y));z=Math.max(0,Math.min(14.999,z));
+ const ix=x|0,iy=y|0,iz=z|0,fx=x-ix,fy=y-iy,fz=z-iz;
+ let value=0;
+ for(let k=0;k<2;k++)for(let j=0;j<2;j++)for(let i=0;i<2;i++)
+ value+=a[index(ix+i,iy+j,iz+k)]*(i?fx:1-fx)*(j?fy:1-fy)*(k?fz:1-fz);
+ return value;
+}
+function flowAt(x,y,z){const gx=(x+3)/dx,gy=(y+2.5)/dy,gz=(z+3)/dz;return [sample(vx,gx,gy,gz),sample(vy,gx,gy,gz),sample(vz,gx,gy,gz)];}
+function advance(dt){
+ simTime+=dt;
+ const phase=(simTime*.4)%3.2;
+ cubePosition=phase<1.6?-.8+phase:2.4-phase;
+ cubeVelocity=phase<1.6?.4:-.4;
+ for(let z=0;z<NZ;z++)for(let y=0;y<NY;y++)for(let x=0;x<NX;x++){
+  const n=index(x,y,z),wx=x*dx-3,wy=y*dy-2.5,wz=z*dz-3;
+  solid[n]=0;
+  // Divergence-free curl forcing: the smoke swirls freely through the cube.
+  const a=wx*2.2+simTime*.63,b=wy*2.7-simTime*.81;
+  const d=wy*3.1+simTime*.47,e=wz*2.3-simTime*.59;
+  const strength=.34;
+  vx[n]+=strength*2.7*Math.sin(a)*Math.cos(b)*dt;
+  vy[n]+=strength*(2.3*Math.sin(d)*Math.cos(e)-2.2*Math.cos(a)*Math.sin(b))*dt;
+  vz[n]-=strength*3.1*Math.cos(d)*Math.sin(e)*dt;
+  if(solid[n]){vx[n]=0;vy[n]=cubeVelocity;vz[n]=0;smoke[n]=0;continue;}
+  vy[n]+=smoke[n]*.85*dt;
+  const radial=wx*wx+wz*wz;
+  if(y<3&&radial<3.24){
+   smoke[n]=Math.min(1,smoke[n]+dt*1.65*(1-radial/3.24));
+   vy[n]=Math.max(vy[n],.55);
+   vx[n]+=Math.sin(simTime*1.7+wz*6)*dt*.08;
+   vz[n]+=Math.cos(simTime*1.3+wx*6)*dt*.08;
+  }
+ }
+ // Semi-Lagrangian transport of velocity and density.
+ for(let z=0;z<NZ;z++)for(let y=0;y<NY;y++)for(let x=0;x<NX;x++){
+  const n=index(x,y,z);
+  if(solid[n]){nextX[n]=nextZ[n]=nextSmoke[n]=0;nextY[n]=cubeVelocity;continue;}
+  const bx=x-vx[n]*dt/dx,by=y-vy[n]*dt/dy,bz=z-vz[n]*dt/dz;
+  nextX[n]=sample(vx,bx,by,bz)*.998;nextY[n]=sample(vy,bx,by,bz)*.998;nextZ[n]=sample(vz,bx,by,bz)*.998;
+  nextSmoke[n]=sample(smoke,bx,by,bz)*Math.exp(-dt*.12);
+ }
+ [vx,nextX]=[nextX,vx];[vy,nextY]=[nextY,vy];[vz,nextZ]=[nextZ,vz];[smoke,nextSmoke]=[nextSmoke,smoke];
+ pressure.fill(0);
+ // Pressure projection keeps the turbulent smoke flow approximately divergence-free.
+ for(let z=1;z<NZ-1;z++)for(let y=1;y<NY-1;y++)for(let x=1;x<NX-1;x++){
+  const n=index(x,y,z);
+  divergence[n]=solid[n]?0:(vx[n+1]-vx[n-1])/(2*dx)+(vy[n+NX]-vy[n-NX])/(2*dy)+(vz[n+NX*NY]-vz[n-NX*NY])/(2*dz);
+ }
+ const ax=1/(dx*dx),ay=1/(dy*dy),az=1/(dz*dz);
+ const offsets=[1,-1,NX,-NX,NX*NY,-NX*NY],weights=[ax,ax,ay,ay,az,az];
+ for(let iteration=0;iteration<10;iteration++){
+  for(let z=1;z<NZ-1;z++)for(let y=1;y<NY-1;y++)for(let x=1;x<NX-1;x++){
+   const n=index(x,y,z);if(solid[n]){pressureNext[n]=0;continue;}
+   let sum=0,weight=0;
+   for(let k=0;k<6;k++){const offset=offsets[k],w=weights[k];
+    if(!solid[n+offset]){sum+=pressure[n+offset]*w;weight+=w;}
+   }
+   pressureNext[n]=weight?(sum-divergence[n])/weight:0;
+  }
+  [pressure,pressureNext]=[pressureNext,pressure];
+ }
+ for(let z=1;z<NZ-1;z++)for(let y=1;y<NY-1;y++)for(let x=1;x<NX-1;x++){
+  const n=index(x,y,z);if(solid[n])continue;
+  const p=pressure[n];
+  vx[n]-=((solid[n+1]?p:pressure[n+1])-(solid[n-1]?p:pressure[n-1]))/(2*dx);
+  vy[n]-=((solid[n+NX]?p:pressure[n+NX])-(solid[n-NX]?p:pressure[n-NX]))/(2*dy);
+  vz[n]-=((solid[n+NX*NY]?p:pressure[n+NX*NY])-(solid[n-NX*NY]?p:pressure[n-NX*NY]))/(2*dz);
+  if(solid[n+1]&&vx[n]>0||solid[n-1]&&vx[n]<0)vx[n]=0;
+  if(solid[n+NX]||solid[n-NX])vy[n]=cubeVelocity;
+  if(solid[n+NX*NY]&&vz[n]>0||solid[n-NX*NY]&&vz[n]<0)vz[n]=0;
+  vx[n]=Math.max(-1.5,Math.min(1.5,vx[n]));vy[n]=Math.max(-1.5,Math.min(1.5,vy[n]));vz[n]=Math.max(-1.5,Math.min(1.5,vz[n]));
+ }
+ for(let z=0;z<NZ;z++)for(let y=0;y<NY;y++)for(let x=0;x<NX;x++){
+  const n=index(x,y,z);
+  if(x===0||x===NX-1)vx[n]=0;if(z===0||z===NZ-1)vz[n]=0;
+  if(y===NY-1)smoke[n]=0;
+  const a=(x+z*NX+y*256)*4;
+  atlas[a]=Math.min(255,Math.round(smoke[n]*255));atlas[a+3]=255;
+ }
+ gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,field);
+ gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,256,28,gl.RGBA,gl.UNSIGNED_BYTE,atlas);
+ updateDust(dt);
+}
+const dustVelocity=new Float32Array(180*3);
+function resetDust(i,initial){
+ const n=i*4,v=i*3;
+ dustData[n]=(Math.random()-.5)*.75;dustData[n+1]=initial?-1.8+Math.random()*3.6:-1.85;dustData[n+2]=(Math.random()-.5)*.75;
+ dustVelocity[v]=(Math.random()-.5)*.1;dustVelocity[v+1]=.25+Math.random()*.2;dustVelocity[v+2]=(Math.random()-.5)*.1;
+}
+for(let i=0;i<180;i++)resetDust(i,true);
+function updateDust(dt){
+ for(let i=0;i<180;i++){
+  const n=i*4,v=i*3;
+  let x=dustData[n],y=dustData[n+1],z=dustData[n+2];
+  const flow=flowAt(x,y,z),drag=1-Math.exp(-dt*2.);
+  dustVelocity[v]+=(flow[0]-dustVelocity[v])*drag;
+  dustVelocity[v+1]+=(flow[1]+.12-dustVelocity[v+1])*drag;
+  dustVelocity[v+2]+=(flow[2]-dustVelocity[v+2])*drag;
+  x+=dustVelocity[v]*dt;y+=dustVelocity[v+1]*dt;z+=dustVelocity[v+2]*dt;
+  const local=[x,y-cubePosition,z];
+  if(Math.abs(local[0])<.47&&Math.abs(local[1])<.47&&Math.abs(local[2])<.47){
+   let axis=0;if(Math.abs(local[1])>Math.abs(local[axis]))axis=1;if(Math.abs(local[2])>Math.abs(local[axis]))axis=2;
+   const sign=local[axis]>=0?1:-1;
+   local[axis]=sign*.475;
+   const surface=axis===1?cubeVelocity:0;
+   dustVelocity[v+axis]=surface+sign*(Math.abs(dustVelocity[v+axis]-surface)*.35+.14);
+   // A small tangential impulse scatters grains along the moving face.
+   dustVelocity[v]+=(Math.random()-.5)*.18;dustVelocity[v+2]+=(Math.random()-.5)*.18;
+   x=local[0];y=local[1]+cubePosition;z=local[2];
+  }
+  dustData[n]=x;dustData[n+1]=y;dustData[n+2]=z;
+  if(y>1.95||y< -1.95||Math.abs(x)>1.55||Math.abs(z)>1.55)resetDust(i,false);
+ }
+ gl.bindBuffer(gl.ARRAY_BUFFER,dustBuffer);gl.bufferSubData(gl.ARRAY_BUFFER,0,dustData);
+ gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.vertexAttribPointer(position,2,gl.FLOAT,false,0,0);
+}
+
+let yaw=.5,pitch=.08,targetYaw=yaw,targetPitch=pitch,clock=0,last=0,raf=0,lastDraw=0;
+let distance=6.8,targetDistance=6.8,lensMm=35;
+let densityScale=1,steps=64,renderLimit=640,paused=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let accumulator=0;
+const uDensity=gl.getUniformLocation(program,'densityScale'),uSteps=gl.getUniformLocation(program,'marchSteps');
+const pause=document.getElementById('pause');
+function updatePause(){pause.textContent=paused?'再生':'一時停止';pause.setAttribute('aria-pressed',String(paused));}
+pause.addEventListener('click',()=>{paused=!paused;last=0;updatePause();});updatePause();
+document.getElementById('reset').addEventListener('click',()=>{targetYaw=.5;targetPitch=.08;targetDistance=6.8;lensMm=35;lens.value='35';lensValue.value='35 mm';});
+document.getElementById('density').addEventListener('input',e=>{densityScale=Number(e.target.value);document.getElementById('densityValue').value=densityScale.toFixed(1);});
+document.getElementById('quality').addEventListener('change',e=>{[steps,renderLimit]={low:[40,440],medium:[64,640],high:[88,960]}[e.target.value];resize();});
+canvas.addEventListener('keydown',e=>{
+ if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','+','=','-'].includes(e.key))e.preventDefault();
+ if(e.key==='ArrowLeft')targetYaw-=.1;if(e.key==='ArrowRight')targetYaw+=.1;
+ if(e.key==='ArrowUp')targetPitch=Math.min(.9,targetPitch+.1);if(e.key==='ArrowDown')targetPitch=Math.max(-.9,targetPitch-.1);
+ if(e.key==='+'||e.key==='=')targetDistance=Math.max(2.2,targetDistance-.3);if(e.key==='-')targetDistance=Math.min(10,targetDistance+.3);
+});
+const pointers=new Map();
+let pinchDistance=0;
+const lens=document.getElementById('lens'),lensValue=document.getElementById('lensValue');
+lens.addEventListener('input',()=>{lensMm=Number(lens.value);lensValue.value=lensMm+' mm';});
+function resize(){const scale=Math.min(devicePixelRatio||1,1.5,renderLimit/Math.max(innerWidth,innerHeight));canvas.width=Math.max(1,Math.round(innerWidth*scale));canvas.height=Math.max(1,Math.round(innerHeight*scale));gl.viewport(0,0,canvas.width,canvas.height);gl.useProgram(program);gl.uniform2f(uResolution,canvas.width,canvas.height);}
+function separation(){const p=Array.from(pointers.values());return p.length<2?0:Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);}
+canvas.addEventListener('pointerdown',e=>{
+ pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ canvas.setPointerCapture(e.pointerId);pinchDistance=separation();
+});
+canvas.addEventListener('pointermove',e=>{
+ const previous=pointers.get(e.pointerId);if(!previous)return;
+ pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(pointers.size===1){
+  targetYaw+=(e.clientX-previous.x)*.008;
+  targetPitch=Math.max(-.9,Math.min(.9,targetPitch+(e.clientY-previous.y)*.006));
+ }else{
+  const gap=separation();
+  if(gap>0&&pinchDistance>0)targetDistance=Math.max(2.2,Math.min(10,targetDistance*pinchDistance/gap));
+  pinchDistance=gap;
+ }
+});
+function release(e){pointers.delete(e.pointerId);pinchDistance=separation();}
+canvas.addEventListener('pointerup',release);canvas.addEventListener('pointercancel',release);canvas.addEventListener('lostpointercapture',release);
+canvas.addEventListener('wheel',e=>{e.preventDefault();targetDistance=Math.max(2.2,Math.min(10,targetDistance*Math.exp(e.deltaY*.001)));},{passive:false});
+function frame(now){
+ if(document.hidden||gl.isContextLost()){raf=0;return;}
+ const elapsed=last?Math.min((now-last)/1000,.1):0;last=now;
+ if(!paused){clock+=elapsed;accumulator+=elapsed;}
+ if(now-lastDraw>=33){
+  lastDraw=now;
+  while(accumulator>=1/30){advance(1/30);accumulator-=1/30;}
+  gl.useProgram(program);gl.uniform1f(cubeUniform,cubePosition);
+  distance+=(targetDistance-distance)*.15;yaw+=(targetYaw-yaw)*.12;pitch+=(targetPitch-pitch)*.12;
+  gl.uniform1f(uTime,clock);gl.uniform1f(uDensity,densityScale);gl.uniform1f(uSteps,steps);
+  gl.uniform1f(uDistance,distance);gl.uniform1f(uFocal,lensMm/20);
+  gl.uniform2f(uOrbit,yaw+Math.sin(clock*.08)*.12,pitch);
+  gl.drawArrays(gl.TRIANGLES,0,6);drawDust(yaw+Math.sin(clock*.08)*.12,pitch);
+ }
+ raf=requestAnimationFrame(frame);
+}
+document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(raf);raf=0;}else{last=0;if(!raf)raf=requestAnimationFrame(frame);}});
+canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();cancelAnimationFrame(raf);raf=0;fail('描画が中断されました。復旧を待つか、ページを再読み込みしてください。');});
+canvas.addEventListener('webglcontextrestored',()=>location.reload());
+gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.vertexAttribPointer(position,2,gl.FLOAT,false,0,0);
+addEventListener('resize',resize,{passive:true});resize();advance(1/30);raf=requestAnimationFrame(frame);
+})();
+</script></body></html>
