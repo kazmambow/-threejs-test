@@ -1,5 +1,5 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Primitive Lab v0.2</title><style>
-*{box-sizing:border-box}body{margin:0;background:#11141b;color:#e8edf6;font:11px -apple-system,BlinkMacSystemFont,sans-serif}header{height:35px;display:flex;align-items:center;justify-content:space-between;padding:0 11px;border-bottom:1px solid #303746}header b{font-size:12px;letter-spacing:.06em}.actions{display:flex;gap:5px}button,select{border:1px solid #3a4659;background:#222b38;color:#dce7f7;border-radius:5px;padding:5px 8px;font:inherit}button:disabled{opacity:.3}button.active{background:#2d5887;border-color:#6b9bca}#viewport{height:43dvh;min-height:225px;background:#1b212b;position:relative;touch-action:none}#viewport canvas{display:block}.hint{position:absolute;bottom:7px;left:9px;color:#8f9db0;font-size:9px;pointer-events:none}main{height:calc(100dvh - 35px - 43dvh);overflow:auto;padding:7px 10px 24px}.row{display:flex;align-items:center;gap:8px;margin:5px 0}.row label{width:90px;flex:none;color:#b7c5d9}.row input{flex:1;min-width:0;accent-color:#78aefe;height:15px}.row output{width:39px;text-align:right;color:#9cc5ff;font-variant-numeric:tabular-nums;touch-action:manipulation;user-select:none;padding:5px 0}.group{font-size:10px;color:#748ca8;margin:10px 0 5px;border-bottom:1px solid #293444;padding-bottom:3px}.toolbar{display:flex;gap:6px;align-items:center}.toolbar select{flex:1}.shading{display:flex;gap:5px}.shading button{flex:1}.note{color:#78899f;font-size:9px;line-height:1.4;margin-top:8px}</style></head><body><header><b>PRIMITIVE LAB <small style="color:#83b6f5">v0.2</small></b><div class="actions"><button id="undo">↶ Undo</button><button id="redo">↷ Redo</button><button id="reset">Reset</button></div></header><div id="viewport"><span class="hint">1本指: 回転 / 2本指: 移動・ズーム</span></div><main><div class="toolbar"><select id="primitive"><option value="cylinder">円柱（パラメトリック）</option><option value="box">立方体</option><option value="sphere">球体</option></select></div><div id="parameters"><div class="group">DIMENSIONS</div><div id="sizeSlot"></div><div id="heightSlot"></div><div class="group">PROFILE</div><div id="coneSlot"></div><div id="basePositionSlot"></div><div id="holeSlot"></div><div class="group">SECTIONS</div><div id="slicesSlot"></div><div id="gapSlot"></div><div class="group">EDGES</div><div id="bevelSlot"></div><div id="smoothnessSlot"></div></div><div class="group">SHADING</div><div class="shading"><button id="smooth" class="active">Smooth</button><button id="flat">Flat</button></div><p class="note">数値をダブルタップ：その項目を初期化。円錐化と穴は後から操作した項目を優先します。ベベル最大で縦横比1:1の円柱は球体になります。</p></main>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Primitive Lab v0.3</title><style>
+*{box-sizing:border-box}body{margin:0;background:#11141b;color:#e8edf6;font:10px -apple-system,BlinkMacSystemFont,sans-serif}header{height:30px;display:flex;align-items:center;justify-content:space-between;padding:0 11px;border-bottom:1px solid #303746}header b{font-size:12px;letter-spacing:.06em}.actions{display:flex;gap:5px}button,select{border:1px solid #3a4659;background:#222b38;color:#dce7f7;border-radius:5px;padding:3px 5px;font:inherit}button:disabled{opacity:.3}button.active{background:#2d5887;border-color:#6b9bca}#viewport{height:43dvh;min-height:225px;background:#1b212b;position:relative;touch-action:none}#viewport canvas{display:block}.hint{position:absolute;bottom:7px;left:9px;color:#8f9db0;font-size:9px;pointer-events:none}main{height:calc(100dvh - 30px - 43dvh);overflow:auto;padding:4px 7px 16px}.row{display:flex;align-items:center;gap:4px;margin:2px 0}.row label{width:72px;flex:none;color:#b7c5d9}.row input{flex:1;min-width:0;accent-color:#78aefe;height:13px}.row output{width:32px;text-align:right;color:#9cc5ff;font-variant-numeric:tabular-nums;touch-action:manipulation;user-select:none;padding:5px 0}.group{font-size:10px;color:#748ca8;margin:6px 0 3px;border-bottom:1px solid #293444;padding-bottom:3px}.toolbar{display:flex;gap:6px;align-items:center}.toolbar select{flex:1}.shading{display:flex;gap:5px}.shading button{flex:1}.mini-reset{padding:2px 4px;min-width:21px;color:#a7bbd7;background:transparent;border-color:#303c4e}.note{color:#78899f;font-size:9px;line-height:1.4;margin-top:8px}</style></head><body><header><b>PRIMITIVE LAB <small style="color:#83b6f5">v0.3</small></b><div class="actions"><button id="undo">↶ Undo</button><button id="redo">↷ Redo</button><button id="reset">Reset</button></div></header><div id="viewport"><span class="hint">1本指: 回転 / 2本指: 移動・ズーム</span></div><main><div class="toolbar"><select id="primitive"><option value="cylinder">円柱（パラメトリック）</option><option value="box">立方体</option><option value="sphere">球体</option></select></div><div id="parameters"><div class="group">DIMENSIONS</div><div id="sizeSlot"></div><div id="heightSlot"></div><div class="group">PROFILE</div><div id="coneSlot"></div><div id="basePositionSlot"></div><div id="holeSlot"></div><div class="group">SECTIONS</div><div id="slicesSlot"></div><div id="gapSlot"></div><div class="group">EDGES</div><div id="bevelSlot"></div><div id="smoothnessSlot"></div></div><div class="group">SHADING</div><div class="shading"><button id="smooth" class="active">Smooth</button><button id="flat">Flat</button></div><p class="note">数値をダブルタップ：その項目を初期化。円錐化と穴は後から操作した項目を優先します。ベベル最大で縦横比1:1の円柱は球体になります。</p></main>
 <script type="module">
 import * as THREE from 'https://esm.sh/three@0.169.0';
 import {OrbitControls} from 'https://esm.sh/three@0.169.0/examples/jsm/controls/OrbitControls.js';
@@ -17,21 +17,48 @@ function record(){const s=snapshot();if(history[cursor]===s)return;history=histo
 function buttons(){document.getElementById('undo').disabled=cursor<=0;document.getElementById('redo').disabled=cursor>=history.length-1}
 function restore(s){const v=JSON.parse(s);p=v.p;flat=v.flat;document.getElementById('primitive').value=v.type;sync();build();shading();buttons()}
 document.getElementById('undo').onclick=()=>{if(cursor>0)restore(history[--cursor])};document.getElementById('redo').onclick=()=>{if(cursor<history.length-1)restore(history[++cursor])};
-for(const [key,label,min,max,step] of settings){const slot=document.getElementById(key+'Slot');slot.innerHTML='<div class="row"><label for="'+key+'">'+label+'</label><input id="'+key+'" type="range" min="'+min+'" max="'+max+'" step="'+step+'"><output id="'+key+'Value" title="ダブルタップで初期化"></output></div>';const el=document.getElementById(key);el.addEventListener('pointerdown',()=>dragStart=snapshot());el.addEventListener('input',()=>{p[key]=Number(el.value);conflict(key);sync();build()});el.addEventListener('change',record);document.getElementById(key+'Value').addEventListener('dblclick',()=>{p[key]=defaults[key];conflict(key);sync();build();record()})}
+for(const [key,label,min,max,step] of settings){const slot=document.getElementById(key+'Slot');slot.innerHTML='<div class="row"><label for="'+key+'">'+label+'</label><input id="'+key+'" type="range" min="'+min+'" max="'+max+'" step="'+step+'"><output id="'+key+'Value" title="ダブルタップで初期化"></output><button class="mini-reset" id="'+key+'Reset'" title="初期値に戻す" aria-label="'+label+'をリセット'">↺</button></div>';const el=document.getElementById(key);el.addEventListener('pointerdown',()=>dragStart=snapshot());el.addEventListener('input',()=>{p[key]=Number(el.value);conflict(key);sync();build()});el.addEventListener('change',record);const resetOne=()=>{p[key]=defaults[key];conflict(key);sync();build();record()};document.getElementById(key+'Value').addEventListener('dblclick',resetOne);document.getElementById(key+'Reset').addEventListener('click',resetOne)}
 function conflict(key){if(key==='cone')p.hole=Math.min(p.hole,1-p.cone);if(key==='hole')p.cone=Math.min(p.cone,1-p.hole)}
 function sync(){for(const [key] of settings){document.getElementById(key).value=p[key];document.getElementById(key+'Value').textContent=['slices','smoothness'].includes(key)?p[key]:p[key].toFixed(2)}}
-function geometry(){const g=new THREE.BufferGeometry(),pos=[],uv=[],indices=[];const N=128,H=p.height/2,R=p.size/2,inner=p.hole*(1-p.cone),count=p.slices,round=p.bevel,rows=Math.max(48,p.smoothness*6);
-function point(r,y,a){return [Math.cos(a)*r*R,y,Math.sin(a)*r*R]}
-function vert(r,y,a){const v=point(r,y,a);pos.push(...v);uv.push(a/(2*Math.PI),y/p.height+.5);return pos.length/3-1}
-function quad(a,b,c,d,reverse=false){if(reverse)indices.push(a,c,b,a,d,c);else indices.push(a,b,c,a,c,d)}
-function outer(t){const y=t*2-1,base=p.basePosition*2-1,coneRadius=p.cone===0?1:Math.max(0,1-p.cone*Math.abs(y-base)/(y<base?Math.max(.00001,base+1):Math.max(.00001,1-base)));const sphere=Math.sqrt(Math.max(0,1-y*y));return Math.max(0,coneRadius*((1-round)+round*sphere))}
-for(let s=0;s<count;s++){const sector=2*Math.PI/count,trim=sector*p.gap/2,a0=s*sector+trim,a1=(s+1)*sector-trim;if(a1-a0<.00001)continue;const cols=Math.max(5,Math.ceil(N/count*(1-p.gap))),outerGrid=[],innerGrid=[];
-for(let j=0;j<=rows;j++){const t=j/rows,y=-H+t*p.height,r=outer(t);const ro=[],ri=[];for(let i=0;i<=cols;i++){const a=a0+(a1-a0)*i/cols;ro.push(vert(r,y,a));ri.push(vert(Math.min(inner,r),y,a))}outerGrid.push(ro);innerGrid.push(ri)}
-for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){quad(outerGrid[j][i],outerGrid[j][i+1],outerGrid[j+1][i+1],outerGrid[j+1][i]);if(inner>0)quad(innerGrid[j][i+1],innerGrid[j][i],innerGrid[j+1][i],innerGrid[j+1][i+1])}
-for(const j of [0,rows])for(let i=0;i<cols;i++){if(j===0)quad(innerGrid[j][i],innerGrid[j][i+1],outerGrid[j][i+1],outerGrid[j][i]);else quad(outerGrid[j][i],outerGrid[j][i+1],innerGrid[j][i+1],innerGrid[j][i])}
-if(count>1||p.gap>0)for(const i of [0,cols])for(let j=0;j<rows;j++){if(i===0)quad(innerGrid[j][i],outerGrid[j][i],outerGrid[j+1][i],innerGrid[j+1][i]);else quad(outerGrid[j][i],innerGrid[j][i],innerGrid[j+1][i],outerGrid[j+1][i])}
+function geometry(){
+const g=new THREE.BufferGeometry(),pos=[],norm=[],indices=[];
+const R=p.size/2,H=p.height/2,sections=p.slices;
+const inner=p.hole,round=p.bevel*Math.min(R,H);
+const rows=Math.max(64,p.smoothness*8),N=128;
+const eps=1e-7;
+function vertex(r,y,a){const id=pos.length/3;pos.push(Math.cos(a)*r,y,Math.sin(a)*r);return id}
+function tri(a,b,c){const ax=pos[a*3],ay=pos[a*3+1],az=pos[a*3+2],bx=pos[b*3],by=pos[b*3+1],bz=pos[b*3+2],cx=pos[c*3],cy=pos[c*3+1],cz=pos[c*3+2];const ux=bx-ax,uy=by-ay,uz=bz-az,vx=cx-ax,vy=cy-ay,vz=cz-az;const nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;if(nx*nx+ny*ny+nz*nz>eps*eps)indices.push(a,b,c)}
+function quad(a,b,c,d){tri(a,b,c);tri(a,c,d)}
+function baseRadius(t){const b=p.basePosition;const denom=t<b?Math.max(b,1e-6):Math.max(1-b,1e-6);return Math.max(0,1-p.cone*Math.abs(t-b)/denom)}
+function bevelRadius(t){if(round<=eps)return R;const y=-H+2*H*t,flatEnd=H-round;if(Math.abs(y)<=flatEnd)return R;const v=Math.min(round,Math.abs(y)-flatEnd);return R-round+Math.sqrt(Math.max(0,round*round-v*v))}
+function outer(t){return Math.max(0,bevelRadius(t)*baseRadius(t))}
+function inside(t){return Math.min(R*inner,outer(t))}
+for(let s=0;s<sections;s++){
+const span=2*Math.PI/sections,trim=span*p.gap/2,a0=s*span+trim,a1=(s+1)*span-trim;
+if(a1-a0<1e-5)continue;
+const cols=Math.max(4,Math.ceil(N/sections*(1-p.gap))),out=[],inn=[];
+for(let j=0;j<=rows;j++){const t=j/rows,y=-H+p.height*t,ro=outer(t),ri=inside(t),oo=[],ii=[];
+for(let i=0;i<=cols;i++){const a=a0+(a1-a0)*i/cols;oo.push(vertex(ro,y,a));ii.push(vertex(ri,y,a))}
+out.push(oo);inn.push(ii)}
+for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
+quad(out[j][i],out[j][i+1],out[j+1][i+1],out[j+1][i]);
+if(inner>0)quad(inn[j][i+1],inn[j][i],inn[j+1][i],inn[j+1][i+1])
 }
-g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(indices);g.computeVertexNormals();return g}
+for(const j of [0,rows])for(let i=0;i<cols;i++){
+if(j===0)quad(inn[j][i],inn[j][i+1],out[j][i+1],out[j][i]);
+else quad(out[j][i],out[j][i+1],inn[j][i+1],inn[j][i])
+}
+if(sections>1||p.gap>0)for(const i of [0,cols])for(let j=0;j<rows;j++){
+if(i===0)quad(inn[j][i],out[j][i],out[j+1][i],inn[j+1][i]);
+else quad(out[j][i],inn[j][i],inn[j+1][i],out[j+1][i])
+}
+}
+g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+g.setIndex(indices);
+
+g.computeVertexNormals();
+return g
+}
 function build(){if(mesh){scene.remove(mesh);mesh.geometry.dispose();mesh.material.dispose()}const type=document.getElementById('primitive').value;let g=type==='cylinder'?geometry():type==='box'?new THREE.BoxGeometry(2,2,2):new THREE.SphereGeometry(1.25,64,48);const material=new THREE.MeshStandardMaterial({color:0x8bb9e9,metalness:.24,roughness:.37,side:THREE.DoubleSide,flatShading:flat});mesh=new THREE.Mesh(g,material);scene.add(mesh);document.getElementById('parameters').style.display=type==='cylinder'?'':'none'}
 function shading(){document.getElementById('flat').classList.toggle('active',flat);document.getElementById('smooth').classList.toggle('active',!flat)}
 document.getElementById('primitive').onchange=()=>{build();record()};document.getElementById('reset').onclick=()=>{p={...defaults};flat=false;sync();shading();build();record()};for(const [id,v] of [['flat',true],['smooth',false]])document.getElementById(id).onclick=()=>{flat=v;shading();build();record()};
