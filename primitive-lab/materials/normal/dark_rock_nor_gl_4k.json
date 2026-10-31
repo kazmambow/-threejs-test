@@ -1,0 +1,8 @@
+{
+  "name": "dark_rock_nor_gl_4k",
+  "source": "dark_rock_4k.blend.zip",
+  "previewAtlas": "../preview-atlas.base64.txt",
+  "atlasTile": 2,
+  "previewResolution": 64,
+  "originalResolution": 4096
+}
