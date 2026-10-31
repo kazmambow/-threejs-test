@@ -71,7 +71,7 @@ const group=new THREE.Group(),a=x.array||arrayDefaults,rot=x.rotation||{x:0,y:0,
 const rng=(()=>{let v=(Math.floor(a.seed)||1)>>>0;return()=>{v=(Math.imul(v,1664525)+1013904223)>>>0;return v/4294967296}})();
 function instance(px,py,pz,rx=0,ry=0,rz=0){const m=new THREE.Mesh(base,material);m.position.set(px,py,pz);const d=Math.PI/180,random=()=>((rng()*2)-1)*a.randomRotation*d;m.scale.setScalar(Math.max(.001,1+(rng()*2-1)*a.sizeRandom/100));m.rotation.set(rx+a.rotationX*d+random(),ry+a.rotationY*d+random(),rz+a.rotationZ*d+random());group.add(m)}
 if(a.mode==='grid'){
-const nx=a.countX,ny=a.countY,nz=a.countZ,d=2+a.spacing;
+const nx=a.countX,ny=a.countY,nz=a.countZ,d=a.spacing;
 for(let ix=0;ix<nx;ix++)for(let iy=0;iy<ny;iy++)for(let iz=0;iz<nz;iz++){
 const j=a.scatter;instance((ix-(nx-1)/2)*d+(rng()-.5)*2*j,(iy-(ny-1)/2)*d+(rng()-.5)*j,(iz-(nz-1)/2)*d+(rng()-.5)*j)}
 }else if(a.mode==='surface'){
