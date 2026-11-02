@@ -73,3 +73,5 @@ https://video-copilot.gitbook.io/element2/animating-3d-objects/particle-replicat
 https://video-copilot.gitbook.io/element2/animating-3d-objects/world-transform
 
 https://video-copilot.gitbook.io/element2/extruding-3d-text-and-mask-shapes/extruding-text
+
+PNG出力コマンドは画像生成して幅・高さを正常に返すことまで確認。確認用ブラウザのダウンロード完了通知が取得できず、保存ファイル自体の検査は未完了。
