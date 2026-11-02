@@ -455,7 +455,7 @@ else if(c.type==='output.set'){if(c.values?.mode&&!['full','wire','normal','dept
 else if(c.type==='path.import')ingestSvg(c.svg,c.name||'SVG Path',c.slot);
 else if(c.type==='path.create')return {ok:true,id:createPathObject(c.slot)};
 else if(c.type==='texture.assign'){if(!Number.isInteger(c.slot)||c.slot<1||c.slot>10||c.asset&&!sessionAssets.has(c.asset))throw Error('テクスチャ入力が不正です');textureChannels[c.slot-1]=c.asset||null;rebuildMaterials();syncGlobalControls()}
-else return globalCommandExecutor(c);if(!commandBatchDepth)record();if(globalControlsReady)syncGlobalControls();return {ok:true,type:c.type}};
+else {const result=globalCommandExecutor(c);if(globalControlsReady&&['lighting.set','environment.set'].includes(c.type))syncGlobalControls();return result}if(!commandBatchDepth)record();if(globalControlsReady)syncGlobalControls();return {ok:true,type:c.type}};
 commandCatalog.push('output.export','world.set','world.null.create','world.null.set','world.null.unlink','world.null.delete','render.set','output.set','path.import','path.create','texture.assign');
 
 window.PrimitiveLab=Object.freeze({execute:executeCommand,commands:commandCatalog,getState:()=>runCommand({type:'state.get'}),schema:()=>runCommand({type:'schema.get'})});
