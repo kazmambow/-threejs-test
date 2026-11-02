@@ -34,3 +34,17 @@ Browser file pickers do not expose an OS file path that can be used to reveal a 
 ## v0.21 validation status
 
 Implementation is prepared on a review branch. DOM/adapter tests cover the new controls, ten slots, replacement, undo restoration, role separation, and environment data. A real RGBELoader decodes the HDR fixture. **Actual browser/GPU rendering has not been verified for v0.21:** macOS sandbox denied Chrome's MachPortRendezvous startup, and the previous computer-use browser tool was unavailable. Keep this branch out of the GitHub Pages production branch until real browser checks pass.
+
+## v0.22: update separation and AE animation
+
+- Material parameter edits update the existing material and its compiled uniform sets. They do not rebuild geometry, distribution groups, or folder instances.
+- Shader programs are invalidated for layout/feature changes, not for ordinary value changes. Runtime caches live in WeakMaps, outside JSON scene data.
+- Distribution updates reuse geometry/material resources if type, geometry parameters, UV settings, shading mode, and OBJ source are unchanged.
+- Parse OBJ mesh geometry once and share it between copies. Dispose geometry/material resources when the shape is replaced or the object is deleted.
+- Render when the scene changes, when OrbitControls reports movement, or when damping is active. Idle frames skip GPU rendering; resize/context restoration/visibility and environment changes invalidate the scene.
+- AE distribution/Scatter controls should be exposed as keyframeable effect parameters for array channels 1–8. These are separate from texture Custom Layer inputs 1–10.
+- At any requested render time, compute placement from evaluated parameters and Seed. Results must not depend on playback order. Caches are an optimization only; an AE implementation must isolate/synchronize caches for concurrent frame rendering.
+
+### Validation
+
+DOM/adapter tests compare v0.21 and v0.22 with real Three.js geometry/material objects and a mocked renderer. Fifty roughness edits change geometry regeneration from 50 to 0. A two-submesh OBJ grid of 125 copies changes initial parses from 125 to 1 and rearrangement parses from 125 to 0. Uniform refresh, cached shader variants, source replacement/removal, folder-shared materials, geometry/UV replacement, idle redraw suppression and camera events are covered. Actual browser/GPU FPS has not been measured; no Chrome process was launched for v0.22 testing.
