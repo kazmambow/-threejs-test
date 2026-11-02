@@ -1,0 +1,512 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Primitive Lab v0.23</title><style>
+*[hidden]{display:none!important}*{box-sizing:border-box}body{margin:0;background:#11141b;color:#e8edf6;font:10px -apple-system,BlinkMacSystemFont,sans-serif}header{height:30px;display:flex;align-items:center;justify-content:space-between;padding:0 9px;border-bottom:1px solid #303746}header b{font-size:11px}.actions{display:flex;gap:4px}button,select{border:1px solid #3a4659;background:#222b38;color:#dce7f7;border-radius:5px;padding:4px;font:inherit}button:disabled{opacity:.3}button.active{background:#2d5887;border-color:#6b9bca}#viewport{height:var(--view-height,43dvh);min-height:120px;background:#1b212b;position:relative;touch-action:none;display:flex}#viewCanvas{flex:1;min-width:0;position:relative;touch-action:none}#sceneSide{width:var(--scene-width,37%);max-width:none;min-width:95px;background:#111720;border-left:1px solid #38475a;overflow:auto;padding:5px}#sceneSide .object{padding:4px 2px;font-size:9px}#sceneSide .addbar{flex-wrap:wrap}#sceneSide .addbar button{font-size:9px}#materialLibrary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px}.matCard{border:1px solid #39485a;border-radius:6px;background:#222b38;padding:4px;text-align:center;min-width:0}.matCard.active{border-color:#81b7ff;background:#2b4563}.matCard canvas{width:100%;max-width:52px;aspect-ratio:1;display:block;margin:auto}.matCard small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.materialEditor{margin-top:8px}.hint{position:absolute;bottom:7px;left:9px;color:#8f9db0;font-size:9px;pointer-events:none}main{height:calc(100dvh - var(--header-height,30px) - var(--view-height,43dvh) - 7px);display:grid;grid-template-columns:var(--split, 50%) 6px minmax(0,1fr);overflow:hidden}.panel{min-width:0;overflow:auto;padding:6px 5px 20px}.dividerHandle{background:#354153;touch-action:none;cursor:col-resize;position:relative}.dividerHandle:after{content:"";position:absolute;top:45%;left:2px;width:2px;height:30px;border-radius:3px;background:#83b6f5}.tabbar{display:flex;gap:3px;margin-bottom:5px}.tabbar button{flex:1;font-size:9px}.arrayField{display:flex;align-items:center;gap:3px;margin:3px 0}.arrayField label{width:50px;flex:none;color:#b7c5d9;font-size:9px}.arrayField input[type=range]{flex:1;min-width:0;accent-color:#78aefe}.arrayField output{width:28px;text-align:right;color:#9cc5ff;font-size:9px}.arrayField select{width:100%;min-width:0}.matRow input[type=file]{width:100%;min-width:0;font-size:9px}.matRow{display:flex;gap:3px;align-items:center;margin:5px 0}.matRow label{width:58px;flex:none;font-size:9px}.matRow select{flex:1;min-width:0;font-size:9px}.matRow input[type=color]{width:34px;height:24px;border:0;background:transparent;padding:0}.object button{padding:2px 4px}.objectActions{display:flex;gap:2px;opacity:0;pointer-events:none}.object:hover .objectActions,.object:focus-within .objectActions,.object.selected .objectActions{opacity:1;pointer-events:auto}.folderChildren{margin:2px 0 7px 12px;padding-left:18px;border-left:1px solid #527ea6}.folderChildren .object{margin:3px 0}.folderChildren .folderMaterial{margin-left:24px!important}.folderMaterial{margin-left:24px!important}.folderFooter{display:flex;justify-content:flex-end;margin-top:7px}.headerTools{display:flex;gap:4px;align-items:center}.headerTools select{max-width:110px}@media(hover:none){.objectActions{opacity:1;pointer-events:auto}}.folderRow{display:flex;gap:3px;align-items:center;margin:3px 0;padding:5px;border:1px solid #39485a;border-radius:5px}.folderRow select,.object select{max-width:54px;font-size:9px;padding:2px}.folderRow .name{flex:1}.resizeSide{width:7px;flex:none;background:#354153;touch-action:none;cursor:col-resize}.resizeHeight{height:7px;background:#354153;touch-action:none;cursor:row-resize}.dragGhost{position:fixed;z-index:1000;pointer-events:none;background:#305784;border:1px solid #91bfff;border-radius:5px;padding:7px;opacity:.9}.dropTarget{outline:2px solid #83b6f5;background:#304a65!important}.object .name{touch-action:none}.panelTitle{color:#9bb1d1;font-size:10px;margin:2px 0 8px}.row{display:flex;align-items:center;gap:2px;margin:2px 0}.row label{width:54px;flex:none;color:#b7c5d9;font-size:9px}.row input{flex:1;min-width:0;accent-color:#78aefe;height:13px}.row output{width:26px;text-align:right;color:#9cc5ff;font-variant-numeric:tabular-nums;user-select:none;font-size:9px}.group{font-size:9px;color:#748ca8;margin:7px 0 3px;border-bottom:1px solid #293444;padding-bottom:2px}.shading{display:flex;gap:4px}.shading button{flex:1}.mini-reset{padding:1px 2px;min-width:16px;color:#a7bbd7;background:transparent;border-color:#303c4e}.object{display:flex;align-items:center;gap:3px;padding:7px 4px;border:1px solid #303c4e;border-radius:5px;margin:3px 0;cursor:pointer}.object.selected{background:#2a4c70;border-color:#6894c3}.object .name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.addbar{display:flex;gap:4px;margin:7px 0}.addbar select{min-width:0;flex:1}.addbar button{white-space:nowrap;background:#315b86}.empty{color:#8798af;font-size:9px}.note{color:#78899f;font-size:9px;line-height:1.4;margin-top:8px}
+.matRow input[type=range],.matRow input[type=text]{flex:1;min-width:0}
+
+.row,.arrayField,.dialRow,.matRow{min-height:19px;margin:1px 0;gap:4px}.row label,.arrayField label,.dialRow label{width:76px}.numeric{flex:0 1 86px!important;width:86px;min-width:46px!important;height:18px!important;padding:1px 6px;border:1px solid #3a4659;border-radius:4px;background:#192330;color:#a9ceff;font:inherit;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:ew-resize;touch-action:none}.numeric:focus{outline:1px solid #80b5f7;background:#26394e;cursor:text}.numeric.scrubbing{cursor:ew-resize;user-select:none}.unit{color:#7d90aa;font-size:9px;min-width:10px}.row .mini-reset,.arrayField .mini-reset,.dialRow .mini-reset{margin-left:1px}.group{margin-top:6px}.folderChildren .object .name{font-weight:500}.uvHint{color:#78899f;font-size:9px;margin:4px 0}.matRow input.numeric{flex:0 1 86px!important}
+
+.number-step{flex:none;width:18px;height:18px;padding:0;font-size:11px;line-height:16px;border-radius:3px}.number-step:disabled{opacity:.3}
+.textureRow{display:flex;align-items:center;gap:5px;margin:4px 0;min-height:22px}.textureRow>label{width:90px;flex:none;font-size:10px;white-space:nowrap}.textureRow>select{flex:none;width:13ch;min-width:13ch;max-width:13ch;height:22px;padding:2px 3px;font-size:10px;overflow:hidden;text-overflow:ellipsis}.textureStrength{display:flex;align-items:center;gap:3px;margin:0;min-height:0}.textureStrength input.numeric{width:42px;min-width:36px!important;flex:0 0 42px!important}.textureStrength .unit{min-width:8px}.textureOpen{height:21px;min-width:22px;padding:1px 3px;font-size:11px}.textureRow input[type=file][hidden]{display:none!important}
+.unit:empty{display:none}
+
+.materialGroup{border:1px solid #303c4e;border-radius:4px;margin:3px 0;padding:0 5px}.materialGroup>summary{cursor:pointer;padding:4px 0;color:#c2d4e9;font-size:10px;user-select:none}.materialGroup[open]{padding-bottom:4px}.materialGroup .note{margin:2px 0 5px;max-width:420px}.materialGroup .row label{width:76px}.materialGroup .matRow label{width:76px}#matName{min-width:0;max-width:400px}
+
+header{height:auto;min-height:30px;gap:5px;flex-wrap:wrap;padding-top:3px;padding-bottom:3px}header .actions{flex-wrap:wrap}dialog{color:#e8edf6;background:#151d29;border:1px solid #526782;border-radius:8px;padding:12px;max-width:min(720px,95vw);max-height:85dvh;overflow:auto;font:11px -apple-system,BlinkMacSystemFont,sans-serif}dialog::backdrop{background:#0009}.dialogHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.dialogHead strong{font-size:13px}.sourceSelect{flex:none!important;width:13ch!important;min-width:13ch!important;max-width:13ch!important;font-size:10px;height:21px;padding:1px 2px}.sourceLink{font-size:10px;max-width:12ch;color:#99c8ff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:none}.loadStatus{font-size:9px;color:#f0bf7a}.matRow,.materialGroup .row,#matNumbers .row,#materialChecks .arrayField{flex-wrap:wrap;justify-content:flex-start}.matRow>label{width:76px}.inlineStrength{display:inline-flex;margin:0!important;flex:none;gap:2px}.inlineStrength .numeric{width:42px;flex:0 0 42px!important}.channelRow{display:flex;gap:6px;align-items:center;min-height:32px;border-bottom:1px solid #293444}.channelRow>strong{width:42px}.channelRow .channelFile{width:20ch}.dialogHint{font-size:10px;color:#9caec5;line-height:1.5;max-width:640px}.materialGroup .arrayField{flex-wrap:wrap}.colorReset{height:18px}
+#performanceHud{position:absolute;top:10px;left:10px;z-index:2;padding:7px 10px;background:#10151ddd;border:1px solid #3c4a60;border-radius:6px;color:#dbe8fa;font:12px/1.6 monospace;pointer-events:none;white-space:pre-line;font-variant-numeric:tabular-nums}
+</style></head><body><header><b>PRIMITIVE LAB <span style="color:#83b6f5">v0.23</span></b><div class="actions"><button id="undo">↶ Undo</button><button id="redo">↷ Redo</button><button id="reset">Reset</button><button id="environmentButton">Environment</button><button id="channelsButton">Texture CH</button><select id="addType"><option value="cylinder">円柱</option><option value="box">立方体</option><option value="sphere">球体</option></select><button id="add">＋追加</button><button id="importObj">OBJ Import</button><input id="objFile" type="file" accept=".obj" hidden></div></header><div id="viewport"><div id="viewCanvas"><span class="hint">1本指: 回転 / 2本指: 移動・ズーム</span></div><div id="sceneResize" class="resizeSide"></div><aside id="sceneSide"><div class="panelTitle">SCENE OBJECTS</div><div id="objects"></div><div class="folderFooter"><button id="addFolder">＋フォルダ</button></div></aside></div><div id="heightResize" class="resizeHeight"></div><main id="workspace"><section class="panel"><div class="panelTitle">MATERIALS</div><div id="materialLibrary"></div><div class="note">マテリアルを選択すると編集できます。</div></section><div id="dividerHandle" class="dividerHandle" role="separator" aria-label="パネル幅を変更"></div><section class="panel"><div class="tabbar"><button id="tabProps" class="active">Properties</button><button id="tabArray">配列 / Scatter</button></div><div id="propertiesTab"><div id="parameters"><div class="group">DIMENSIONS</div><div id="sizeSlot"></div><div id="heightSlot"></div><div class="group">PROFILE</div><div id="coneSlot"></div><div id="basePositionSlot"></div><div id="holeSlot"></div><div class="group">SECTIONS</div><div id="slicesSlot"></div><div id="gapSlot"></div><div class="group">EDGES</div><div id="bevelSlot"></div><label class="arrayField"><input id="bevelInner" type="checkbox" checked> 中心穴にもベベル</label><label class="arrayField"><input id="bevelCuts" type="checkbox" checked> 分割エッジにもベベル</label><div id="smoothnessSlot"></div></div><div class="group">SHADING</div><div class="shading"><button id="smooth" class="active">Smooth</button><button id="flat">Flat</button></div></div><div id="arrayTab" hidden><div class="group">CHANNEL</div><div class="arrayField"><label>編集先</label><select id="arrayChannel"></select></div><div class="group">DISTRIBUTION</div><div class="arrayField"><select id="arrayMode"><option value="single">単体</option><option value="grid">3D配列</option><option value="surface">円柱表面 Scatter</option></select></div><div id="arrayControls"></div><div class="note">Scatterは円柱の側面に配置します。Seedで配置を再現できます。</div></div><div id="materialTab" class="materialEditor" hidden></div></section></main>
+<script type="module">
+import * as THREE from 'https://esm.sh/three@0.169.0';
+import {OrbitControls} from 'https://esm.sh/three@0.169.0/examples/jsm/controls/OrbitControls.js';
+import {OBJLoader} from 'https://esm.sh/three@0.169.0/examples/jsm/loaders/OBJLoader.js';
+import {EXRLoader} from 'https://esm.sh/three@0.169.0/examples/jsm/loaders/EXRLoader.js';
+import {RGBELoader} from 'https://esm.sh/three@0.169.0/examples/jsm/loaders/RGBELoader.js';
+import {RoomEnvironment} from 'https://esm.sh/three@0.169.0/examples/jsm/environments/RoomEnvironment.js';
+const host=document.getElementById('viewCanvas'),scene=new THREE.Scene();scene.background=new THREE.Color('#1b212b');
+const camera=new THREE.PerspectiveCamera(38,1,.01,100);camera.position.set(4.4,3.3,7);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;host.prepend(renderer.domElement);
+const environmentRoom=new RoomEnvironment(),environmentGenerator=new THREE.PMREMGenerator(renderer);
+scene.environment=environmentGenerator.fromScene(environmentRoom,.04).texture;environmentRoom.dispose();environmentGenerator.dispose();
+const studioEnvironment=scene.environment;
+const performanceHud=document.createElement('div');performanceHud.id='performanceHud';performanceHud.title='FPSは連続描画中の実測値。CPU描画送信時間はGPU処理完了までの時間を含みません。';host.append(performanceHud);
+let performanceSamples=[],lastRenderedAt=null,lastHudUpdate=-Infinity,hudIdle=false;
+function updatePerformanceHud(now,rendered,cpuMs=0){
+ if(rendered){
+  if(lastRenderedAt!==null&&now-lastRenderedAt<250)performanceSamples.push({at:now,interval:now-lastRenderedAt,cpuMs});
+  else performanceSamples=[];
+  lastRenderedAt=now;hudIdle=false;
+ }
+ performanceSamples=performanceSamples.filter(sample=>now-sample.at<=1000);
+ const idle=lastRenderedAt===null||now-lastRenderedAt>=250;
+ if(!rendered&&!idle)return;
+ if(now-lastHudUpdate<250&&idle===hudIdle)return;
+ lastHudUpdate=now;hudIdle=idle;
+ const count=performanceSamples.length;
+ const interval=count?performanceSamples.reduce((sum,s)=>sum+s.interval,0)/count:0;
+ const cpu=count?performanceSamples.reduce((sum,s)=>sum+s.cpuMs,0)/count:cpuMs;
+ const info=renderer.info?.render;
+ performanceHud.textContent=(idle?'待機中（描画停止）':count>=3?`FPS: ${(1000/interval).toFixed(1)} | ${(interval).toFixed(1)} ms / frame`:'FPS: 計測中…')+`\nCPU描画送信: ${cpu.toFixed(2)} ms`+`\n三角形: ${(info?.triangles??0).toLocaleString()} | Draw calls: ${info?.calls??0}`;
+}
+let sceneNeedsRender=true;function invalidateScene(){sceneNeedsRender=true}
+renderer.domElement.addEventListener('webglcontextrestored',invalidateScene);document.addEventListener('visibilitychange',()=>{if(!document.hidden)invalidateScene()});
+const orbit=new OrbitControls(camera,renderer.domElement);orbit.mouseButtons.MIDDLE=THREE.MOUSE.PAN;orbit.enableDamping=true;orbit.minDistance=.1;orbit.maxDistance=50;orbit.update();orbit.addEventListener('change',invalidateScene);let lastTap=0,panTouch=null;renderer.domElement.addEventListener('pointerdown',e=>{if(e.pointerType!=='touch')return;const now=performance.now();if(now-lastTap<350){panTouch={id:e.pointerId,x:e.clientX,y:e.clientY};orbit.enabled=false;renderer.domElement.setPointerCapture(e.pointerId)}lastTap=now});renderer.domElement.addEventListener('pointermove',e=>{if(!panTouch||panTouch.id!==e.pointerId)return;const dx=e.clientX-panTouch.x,dy=e.clientY-panTouch.y;const distance=camera.position.distanceTo(orbit.target),factor=2*distance*Math.tan(camera.fov*Math.PI/360)/host.clientHeight;const right=new THREE.Vector3().setFromMatrixColumn(camera.matrix,0),up=new THREE.Vector3().setFromMatrixColumn(camera.matrix,1);const move=right.multiplyScalar(-dx*factor).add(up.multiplyScalar(dy*factor));camera.position.add(move);orbit.target.add(move);panTouch.x=e.clientX;panTouch.y=e.clientY});for(const ev of ['pointerup','pointercancel'])renderer.domElement.addEventListener(ev,e=>{if(panTouch&&panTouch.id===e.pointerId){panTouch=null;orbit.enabled=true}});
+scene.add(new THREE.HemisphereLight(0xe5f1ff,0x303746,2.2));const sun=new THREE.DirectionalLight(0xffffff,3);sun.position.set(4,7,5);scene.add(sun);
+const grid=new THREE.GridHelper(16,32,0x4c5a71,0x2a3546);grid.position.y=-1.5;scene.add(grid);
+const defaults={bevelInner:true,bevelCuts:true,size:1.25,height:1.25,cone:0,basePosition:0,hole:0,slices:1,gap:0,bevel:0,smoothness:8};
+const settings=[['size','直径',0,5,.05],['height','高さ',0,5,.05],['cone','円錐化',0,1,.01],['basePosition','底面位置',0,1,.01],['hole','中心の穴',0,1,.01],['slices','分割',1,16,1],['gap','隙間',0,1,.01],['bevel','ベベル',0,1,.01],['smoothness','滑らかさ',1,24,1]];
+let selectedMaterial=null;let items=[],selected=0,nextId=1,history=[],cursor=-1,activeTab="props",folders=[],nextFolderId=1,soloId=null,activeChannel=1;const channelArrays={};const arrayDefaults={mode:"single",countX:2,countY:2,countZ:2,spacing:0.3,scatter:0,seed:1,sizeRandom:0,surfaceCount:20,surfaceRadius:2,surfaceHeight:2.5,rotationX:0,rotationY:0,rotationZ:0,randomRotation:0};const colors=[0x75b9ff,0xffaa65,0x85dfaa,0xe39aff,0xff7f9a];
+function current(){return items.find(x=>x.id===selected)}
+function snapshot(){return JSON.stringify({items:items.map(({mesh,...rest})=>rest),selected,selectedMaterial,activeTab,nextId,folders,nextFolderId,soloId,activeChannel,channelArrays,textureChannels,environmentState})}
+function record(){const s=snapshot();if(history[cursor]===s)return;history=history.slice(0,cursor+1);history.push(s);cursor=history.length-1;if(history.length>100){history.shift();cursor--}buttons()}
+function buttons(){document.getElementById('undo').disabled=cursor<=0;document.getElementById('redo').disabled=cursor>=history.length-1}
+function disposeAll(){for(const x of items)dispose(x)}function dispose(x){if(!x.mesh)return;const disposedG=new Set(),disposedM=new Set();x.mesh.removeFromParent();x.mesh.traverse(o=>{if(o.isMesh){if(!disposedG.has(o.geometry)){o.geometry.dispose();disposedG.add(o.geometry)}if(!disposedM.has(o.material)){o.material.dispose();disposedM.add(o.material)}}});x.mesh=null}
+function restore(s){if(folderRender){scene.remove(folderRender);folderRender=null}disposeAll();const v=JSON.parse(s);items=v.items;selected=v.selected;selectedMaterial=items.some(x=>x.id===v.selectedMaterial)?v.selectedMaterial:null;activeTab=v.activeTab||'props';nextId=v.nextId;folders=v.folders||[];nextFolderId=v.nextFolderId||1;soloId=v.soloId??null;activeChannel=v.activeChannel||1;for(const key of Object.keys(channelArrays))delete channelArrays[key];Object.assign(channelArrays,v.channelArrays||{});textureChannels.splice(0,textureChannels.length,...(v.textureChannels||Array(10).fill(null)));Object.assign(environmentState,environmentDefaults,v.environmentState||{});applyEnvironment();syncChannels();for(const x of items){x.array??={...arrayDefaults};x.rotation??={x:0,y:0,z:0};x.material??={color:'#'+colors[x.colorIndex%colors.length].toString(16).padStart(6,'0'),base:'',rough:'',normal:'',disp:''};build(x)}refreshVisibility();renderList();sync();renderMaterials();tab(activeTab);syncMaterialOptions();buttons()}
+document.getElementById('undo').onclick=()=>{if(cursor>0)restore(history[--cursor])};document.getElementById('redo').onclick=()=>{if(cursor<history.length-1)restore(history[++cursor])};
+const numericControls=[];
+function numericField(parent,{id,label,min,max,step,get,set,reset,unit=''}){
+ const row=document.createElement('div');row.className='row';
+ const caption=document.createElement('label');caption.htmlFor=id;caption.textContent=label;
+ const input=document.createElement('input');input.id=id;input.type='text';input.inputMode='decimal';input.className='numeric';input.setAttribute('aria-label',label);input.title='クリックで直接入力 / 左右にドラッグして変更（Shiftで微調整）';
+ const suffix=document.createElement('span');suffix.className='unit';suffix.textContent=unit;row.append(caption,input,suffix);
+ const clamp=v=>Math.max(min,Math.min(max,v));
+ const rounded=v=>Number(clamp(v).toFixed(6));
+ let pointer=null,editingStart=null;
+ const draw=()=>{input.disabled=get()===undefined;for(const button of row.querySelectorAll('.number-step,.mini-reset'))button.disabled=input.disabled;if(document.activeElement!==input&&!pointer)input.value=String(get()??0)};
+ const apply=v=>{if(Number.isFinite(v))set(rounded(v))};
+ const finish=()=>{if(editingStart===null)return;const text=input.value.trim();if(text!==''&&Number.isFinite(Number(text)))apply(Number(text));input.value=String(get()??0);editingStart=null;record()};
+ input.addEventListener('focus',()=>{editingStart=get()??0});
+ input.addEventListener('input',()=>{const text=input.value.trim();if(text!==''&&Number.isFinite(Number(text)))apply(Number(text))});
+ input.addEventListener('blur',finish);
+ input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();input.blur()}else if(e.key==='Escape'){e.preventDefault();if(editingStart!==null)apply(editingStart);input.value=String(get()??0);input.blur()}else if(e.key==='ArrowUp'||e.key==='ArrowDown'){e.preventDefault();apply((get()??0)+(e.key==='ArrowUp'?1:-1)*step*(e.shiftKey?.1:1));input.value=String(get()??0)}});
+ input.addEventListener('pointerdown',e=>{if(e.button!==0)return;if(document.activeElement===input)input.blur();pointer={id:e.pointerId,x:e.clientX,value:get()??0,dragged:false};input.setPointerCapture(e.pointerId);e.preventDefault()});
+ input.addEventListener('pointermove',e=>{if(!pointer||pointer.id!==e.pointerId)return;const dx=e.clientX-pointer.x;if(!pointer.dragged&&Math.abs(dx)<4)return;pointer.dragged=true;input.classList.add('scrubbing');const quantum=step*(e.shiftKey?.1:1);apply(pointer.value+Math.round(dx/(step>=1?4:2))*quantum);input.value=String(get()??0)});
+ input.addEventListener('pointerup',e=>{if(!pointer||pointer.id!==e.pointerId)return;const dragged=pointer.dragged;pointer=null;input.classList.remove('scrubbing');if(input.hasPointerCapture(e.pointerId))input.releasePointerCapture(e.pointerId);if(dragged){input.value=String(get()??0);record()}else{input.focus();input.select()}});
+ input.addEventListener('pointercancel',()=>{if(pointer){apply(pointer.value);pointer=null;input.classList.remove('scrubbing');input.value=String(get()??0)}});
+ for(const [direction,symbol] of [[-1,'−'],[1,'+']]){const button=document.createElement('button');button.type='button';button.className='number-step '+(direction<0?'minus':'plus');button.textContent=symbol;button.setAttribute('aria-label',label+(direction<0?'を減らす':'を増やす'));button.onclick=()=>{apply((get()??0)+direction*step);input.value=String(get()??0);record()};if(direction<0)row.insertBefore(button,input);else row.append(button)}
+ if(reset!==undefined){const button=document.createElement('button');button.className='mini-reset';button.textContent='↺';button.title=label+'をリセット';button.onclick=()=>{apply(reset);input.value=String(get()??0);record()};row.append(button)}
+ parent.append(row);const control={row,input,draw};numericControls.push(control);draw();return control;
+}
+function drawNumbers(){for(const control of numericControls)control.draw()}
+for(const [key,label,min,max,step] of settings)numericField(document.getElementById(key+'Slot'),{id:key,label,min,max,step,get:()=>current()?.p[key],set:v=>{const x=current();if(!x)return;x.p[key]=v;conflict(x.p,key);build(x);drawNumbers()},reset:defaults[key]});
+function conflict(p,key){if(key==='slices'||key==='smoothness')p[key]=Math.round(p[key]);if(key==='cone')p.hole=Math.min(p.hole,1-p.cone);if(key==='hole')p.cone=Math.min(p.cone,1-p.hole)}
+function sync(){const x=current();document.getElementById('bevelInner').checked=x?.p.bevelInner!==false;document.getElementById('bevelCuts').checked=x?.p.bevelCuts!==false;document.getElementById('parameters').style.display=x&&x.type==='cylinder'?'':'none';document.getElementById('smooth').disabled=!x;document.getElementById('flat').disabled=!x;if(!x){drawNumbers();syncUV();return}syncExtra();syncMaterial();syncMaterialOptions();drawNumbers();syncUV();document.getElementById('flat').classList.toggle('active',x.flat);document.getElementById('smooth').classList.toggle('active',!x.flat)}
+// Renderer-independent mesh data. Height zero is a surface, not two collapsed caps.
+// Keep this topology rule when porting the generator to C++ / the AE SDK.
+function generateFlatCylinderData(p){
+ const positions=[],uvs=[],indices=[];
+ const radius=Math.max(p.size/2,.00025),innerRadius=radius*p.hole;
+ const sections=Math.max(1,Math.round(p.slices)),radialSteps=Math.max(1,Math.round(p.smoothness)*2);
+ function vertex(r,a){const x=Math.cos(a)*r,z=Math.sin(a)*r;const index=positions.length/3;positions.push(x,0,z);uvs.push(.5+x/(2*radius),.5+z/(2*radius));return index}
+ for(let section=0;section<sections;section++){
+  const span=2*Math.PI/sections,trim=span*Math.min(p.gap,.99999)/2;
+  const a0=section*span+trim,a1=(section+1)*span-trim;
+  if(a1-a0<1e-5||innerRadius>=radius)continue;
+  const columns=Math.max(1,Math.ceil(128/sections*(1-p.gap)));
+  const rings=[];let center=null;
+  if(innerRadius===0)center=vertex(0,0);
+  for(let ring=innerRadius===0?1:0;ring<=radialSteps;ring++){
+   const r=innerRadius+(radius-innerRadius)*ring/radialSteps,vertices=[];
+   for(let column=0;column<=columns;column++)vertices.push(vertex(r,a0+(a1-a0)*column/columns));
+   rings.push(vertices);
+  }
+  if(center!==null)for(let column=0;column<columns;column++)indices.push(center,rings[0][column+1],rings[0][column]);
+  for(let ring=0;ring<rings.length-1;ring++)for(let column=0;column<columns;column++){
+   const a=rings[ring][column],b=rings[ring][column+1],c=rings[ring+1][column+1],d=rings[ring+1][column];
+   indices.push(a,b,c,a,c,d);
+  }
+ }
+ return {positions,uvs,indices};
+}
+// A maximum hole leaves one cylindrical surface: no duplicate inner wall or caps.
+function generateThinCylinderData(p){
+ const positions=[],uvs=[],indices=[],radius=Math.max(p.size/2,.00025);
+ const sections=Math.max(1,Math.round(p.slices)),rows=Math.max(64,Math.round(p.smoothness)*8);
+ for(let section=0;section<sections;section++){
+  const span=2*Math.PI/sections,trim=span*Math.min(p.gap,.99999)/2,a0=section*span+trim,a1=(section+1)*span-trim;
+  if(a1-a0<1e-5)continue;
+  const columns=Math.max(1,Math.ceil(128/sections*(1-p.gap))),start=positions.length/3;
+  for(let row=0;row<=rows;row++)for(let column=0;column<=columns;column++){
+   const t=row/rows,a=a0+(a1-a0)*column/columns;
+   positions.push(Math.cos(a)*radius,(t-.5)*p.height,Math.sin(a)*radius);uvs.push(a/(2*Math.PI),t);
+  }
+  for(let row=0;row<rows;row++)for(let column=0;column<columns;column++){
+   const a=start+row*(columns+1)+column,b=a+columns+1,c=b+1,d=a+1;
+   indices.push(a,b,c,a,c,d);
+  }
+ }
+ return {positions,uvs,indices};
+}
+function geometry(p){
+if(p.height===0||p.hole===1){
+ const data=p.height===0?generateFlatCylinderData(p):generateThinCylinderData(p),g=new THREE.BufferGeometry();
+ g.setAttribute('position',new THREE.Float32BufferAttribute(data.positions,3));
+ g.setAttribute('uv',new THREE.Float32BufferAttribute(data.uvs,2));
+ g.setIndex(data.indices);g.computeVertexNormals();return g;
+}
+
+const g=new THREE.BufferGeometry(),pos=[],uv=[],indices=[];
+const R=Math.max(p.size/2,.00025),H=Math.max(p.height/2,.00025),sections=p.slices;
+const inner=p.hole,round=p.bevel*Math.min(R,H);
+const rows=Math.max(64,p.smoothness*8),N=128;
+const eps=1e-7;
+function vertex(r,y,a){const id=pos.length/3;pos.push(Math.cos(a)*r,y,Math.sin(a)*r);uv.push(a/(2*Math.PI),(y+H)/(2*H));return id}
+function tri(a,b,c){const ax=pos[a*3],ay=pos[a*3+1],az=pos[a*3+2],bx=pos[b*3],by=pos[b*3+1],bz=pos[b*3+2],cx=pos[c*3],cy=pos[c*3+1],cz=pos[c*3+2];const ux=bx-ax,uy=by-ay,uz=bz-az,vx=cx-ax,vy=cy-ay,vz=cz-az;const nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;if(nx*nx+ny*ny+nz*nz>eps*eps)indices.push(a,b,c)}
+function quad(a,b,c,d){tri(a,b,c);tri(a,c,d)}
+function baseRadius(t){const b=p.basePosition;const denom=t<b?Math.max(b,1e-6):Math.max(1-b,1e-6);return Math.max(0,1-p.cone*Math.abs(t-b)/denom)}
+function bevelRadius(t){if(round<=eps)return R;const y=-H+2*H*t,flatEnd=H-round;if(Math.abs(y)<=flatEnd)return R;const v=Math.min(round,Math.abs(y)-flatEnd);return R-round+Math.sqrt(Math.max(0,round*round-v*v))}
+function outer(t){return Math.max(0,bevelRadius(t)*baseRadius(t))}
+function inside(t){const ro=outer(t);if(inner<=0)return 0;const edge=p.bevelInner?Math.min(round,Math.max(0,(ro-R*inner)*.48)):0;const y=Math.abs(-H+2*H*t);const blend=edge>0?Math.max(0,1-(H-y)/edge):0;return Math.min(ro,R*inner+edge*blend*blend)}
+for(let s=0;s<sections;s++){
+const span=2*Math.PI/sections,trim=span*Math.min(p.gap,.99999)/2,a0=s*span+trim,a1=(s+1)*span-trim;
+if(a1-a0<1e-5)continue;
+const cols=Math.max(1,Math.ceil(N/sections*(1-p.gap))),out=[],inn=[];
+for(let j=0;j<=rows;j++){const t=j/rows,y=-H+p.height*t,ro=outer(t),ri=inside(t),oo=[],ii=[];
+for(let i=0;i<=cols;i++){const a=a0+(a1-a0)*i/cols;const edgeAngle=p.bevelCuts&&round>0&&sections>1?Math.min(.2,round/Math.max(R,.001)):.0;const u=Math.min(i/cols,1-i/cols);const smooth= edgeAngle>0?Math.min(1,u/edgeAngle):1;const fillet=round*(1-smooth)*(1-smooth)*.25;oo.push(vertex(Math.max(ri,ro-fillet),y,a));ii.push(vertex(Math.min(ro,ri+fillet),y,a))}
+out.push(oo);inn.push(ii)}
+for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
+quad(out[j][i],out[j][i+1],out[j+1][i+1],out[j+1][i]);
+if(inner>0)quad(inn[j][i+1],inn[j][i],inn[j+1][i],inn[j+1][i+1])
+}
+for(const j of [0,rows])for(let i=0;i<cols;i++){
+if(j===0)quad(inn[j][i],inn[j][i+1],out[j][i+1],out[j][i]);
+else quad(out[j][i],out[j][i+1],inn[j][i+1],inn[j][i])
+}
+if(sections>1||p.gap>0)for(const i of [0,cols])for(let j=0;j<rows;j++){
+if(i===0)quad(inn[j][i],out[j][i],out[j+1][i],inn[j+1][i]);
+else quad(out[j][i],inn[j][i],inn[j+1][i],out[j+1][i])
+}
+}
+g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+g.setIndex(indices);
+
+g.computeVertexNormals();
+return g
+
+}
+const uvDefaults={mode:'original',scaleU:1,scaleV:1,offsetU:0,offsetV:0,rotation:0};
+function projectUV(geometry,config={}){
+ const c={...uvDefaults,...config};let g=geometry;
+ if(c.mode!=='original'||!g.getAttribute('uv')){
+  if(g.index){const expanded=g.toNonIndexed();g.dispose();g=expanded}
+  g.computeBoundingBox();const box=g.boundingBox,center=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3());
+  const p=g.getAttribute('position'),uv=new Float32Array(p.count*2),point=new THREE.Vector3();
+  const mode=c.mode==='original'?'box':c.mode;
+  for(let i=0;i<p.count;i+=3){
+   let axis='y';if(mode==='box'){const a=new THREE.Vector3().fromBufferAttribute(p,i),b=new THREE.Vector3().fromBufferAttribute(p,i+1),d=new THREE.Vector3().fromBufferAttribute(p,i+2);const n=b.sub(a).cross(d.sub(a));const abs=[Math.abs(n.x),Math.abs(n.y),Math.abs(n.z)];axis=['x','y','z'][abs.indexOf(Math.max(...abs))]}
+   const us=[];
+   for(let k=0;k<3;k++){point.fromBufferAttribute(p,i+k);const x=(point.x-box.min.x)/(size.x||1),y=(point.y-box.min.y)/(size.y||1),z=(point.z-box.min.z)/(size.z||1);let u,v;
+    if(mode==='cylindrical'||mode==='spherical'){const dx=point.x-center.x,dy=point.y-center.y,dz=point.z-center.z;u=(Math.atan2(dz,dx)+Math.PI)/(2*Math.PI);v=mode==='cylindrical'?y:1-Math.acos(Math.max(-1,Math.min(1,dy/(Math.hypot(dx,dy,dz)||1))))/Math.PI}
+    else if(mode==='planarX'||(mode==='box'&&axis==='x')){u=z;v=y}else if(mode==='planarZ'||(mode==='box'&&axis==='z')){u=x;v=y}else{u=x;v=z}
+    uv[(i+k)*2]=u;uv[(i+k)*2+1]=v;us.push(u)
+   }
+   if((mode==='cylindrical'||mode==='spherical')&&Math.max(...us)-Math.min(...us)>.5)for(let k=0;k<3;k++)if(us[k]<.5)uv[(i+k)*2]+=1;
+  }
+  g.setAttribute('uv',new THREE.BufferAttribute(uv,2));
+ }
+ const uv=g.getAttribute('uv'),angle=c.rotation*Math.PI/180,cos=Math.cos(angle),sin=Math.sin(angle);
+ for(let i=0;i<uv.count;i++){const u=uv.getX(i)-.5,v=uv.getY(i)-.5;uv.setXY(i,(u*cos-v*sin)*c.scaleU+.5+c.offsetU,(u*sin+v*cos)*c.scaleV+.5+c.offsetV)}
+ uv.needsUpdate=true;return g;
+}
+// Resource reuse is independent of distribution: AE animation can update placement without regenerating shape data.
+const meshBuildKeys=new WeakMap();
+function build(x){
+ const key=JSON.stringify([x.type,x.p,x.uv,x.flat]),cached=meshBuildKeys.get(x);
+ const reusable=!!x.mesh&&cached?.key===key&&cached?.objText===x.objText;
+ let template=reusable?x.mesh.children[0]:null,base=null,material=null;
+ if(template)template.traverse(object=>{if(object.isMesh&&!material){material=object.material;base=object.geometry}});
+ if(material){x.mesh.removeFromParent();x.mesh=null}
+ else{
+  dispose(x);template=null;
+  base=x.type==='cylinder'?geometry(x.p):x.type==='box'?new THREE.BoxGeometry(1,1,1):x.type==='obj'?null:new THREE.SphereGeometry(.625,64,48);if(base)base=projectUV(base,x.uv);
+  material=new THREE.MeshPhysicalMaterial({flatShading:x.flat});
+ }
+ applyMaterial(x,material);
+ // Parse an OBJ only once; copies share its geometry/material instead of allocating them repeatedly.
+ if(x.type==='obj'&&!template){template=new OBJLoader().parse(x.objText||'');template.traverse(object=>{if(object.isMesh){object.material=material;object.geometry=projectUV(object.geometry,x.uv)}})}
+ meshBuildKeys.set(x,{key,objText:x.objText});
+const group=new THREE.Group(),a=x.folderId?arrayDefaults:(channelArrays[effectiveChannel(x)]||x.array||arrayDefaults),rot=x.rotation||{x:0,y:0,z:0};
+const rng=(()=>{let v=(Math.floor(a.seed)||1)>>>0;return()=>{v=(Math.imul(v,1664525)+1013904223)>>>0;return v/4294967296}})();
+function instance(px,py,pz,rx=0,ry=0,rz=0){const m=x.type==='obj'?template.clone(true):new THREE.Mesh(base,material);m.position.set(px,py,pz);const d=Math.PI/180,random=()=>((rng()*2)-1)*a.randomRotation*d;m.scale.setScalar(Math.max(.001,1+(rng()*2-1)*a.sizeRandom/100));m.rotation.set(rx+a.rotationX*d+random(),ry+a.rotationY*d+random(),rz+a.rotationZ*d+random());group.add(m)}
+if(a.mode==='grid'){
+const nx=a.countX,ny=a.countY,nz=a.countZ,d=a.spacing;
+for(let ix=0;ix<nx;ix++)for(let iy=0;iy<ny;iy++)for(let iz=0;iz<nz;iz++){
+const j=a.scatter;instance((ix-(nx-1)/2)*d+(rng()-.5)*2*j,(iy-(ny-1)/2)*d+(rng()-.5)*j,(iz-(nz-1)/2)*d+(rng()-.5)*j)}
+}else if(a.mode==='surface'){
+for(let i=0;i<a.surfaceCount;i++){const angle=2*Math.PI*i/a.surfaceCount,h=((i+.5)/a.surfaceCount-.5)*a.surfaceHeight;
+instance(Math.cos(angle)*a.surfaceRadius+(rng()-.5)*2*a.scatter,h+(rng()-.5)*2*a.scatter,Math.sin(angle)*a.surfaceRadius+(rng()-.5)*2*a.scatter,0,-angle,0)}
+}else instance(0,0,0);
+group.rotation.set(rot.x*Math.PI/180,rot.y*Math.PI/180,rot.z*Math.PI/180);
+x.mesh=group;if(!x.folderId)scene.add(group);group.visible=soloId===null||soloId===x.id;scheduleFolderRebuild();invalidateScene()
+}
+let folderRender=null,foldersQueued=false;
+function scheduleFolderRebuild(){if(foldersQueued)return;foldersQueued=true;queueMicrotask(()=>{if(foldersQueued){foldersQueued=false;rebuildFolders()}})}
+function rebuildFolders(){foldersQueued=false;invalidateScene();if(folderRender){scene.remove(folderRender);folderRender=null}folderRender=new THREE.Group();for(const f of folders){const members=items.filter(x=>x.folderId===f.id&&x.mesh);if(!members.length)continue;const template=new THREE.Group();for(const x of members){if(x.mesh.parent)x.mesh.parent.remove(x.mesh);template.add(x.mesh)}const a=channelArrays[f.channel]||arrayDefaults;const rng=(()=>{let n=(a.seed||1)>>>0;return()=>{n=(Math.imul(n,1664525)+1013904223)>>>0;return n/4294967296}})();function instance(px,py,pz,ry=0){const copy=template.clone(true);const rand=()=>((rng()*2)-1)*a.randomRotation*Math.PI/180;copy.position.set(px,py,pz);copy.rotation.set(a.rotationX*Math.PI/180+rand(),a.rotationY*Math.PI/180+ry+rand(),a.rotationZ*Math.PI/180+rand());copy.scale.setScalar(Math.max(.001,1+(rng()*2-1)*a.sizeRandom/100));copy.visible=soloId===null||members.some(x=>x.id===soloId);if(soloId!==null)copy.children.forEach((child,i)=>child.visible=members[i].id===soloId);folderRender.add(copy)}
+if(a.mode==='grid'){for(let ix=0;ix<a.countX;ix++)for(let iy=0;iy<a.countY;iy++)for(let iz=0;iz<a.countZ;iz++){instance((ix-(a.countX-1)/2)*a.spacing+(rng()-.5)*2*a.scatter,(iy-(a.countY-1)/2)*a.spacing+(rng()-.5)*2*a.scatter,(iz-(a.countZ-1)/2)*a.spacing+(rng()-.5)*2*a.scatter)}}else if(a.mode==='surface'){for(let i=0;i<a.surfaceCount;i++){const angle=2*Math.PI*i/a.surfaceCount;instance(Math.cos(angle)*a.surfaceRadius+(rng()-.5)*2*a.scatter,((i+.5)/a.surfaceCount-.5)*a.surfaceHeight+(rng()-.5)*2*a.scatter,Math.sin(angle)*a.surfaceRadius+(rng()-.5)*2*a.scatter,-angle)}}else instance(0,0,0)}scene.add(folderRender)}
+function effectiveChannel(x){const folder=folders.find(f=>f.id===x.folderId);return folder?folder.channel:(x.channel||1)}
+function refreshVisibility(){for(const x of items)if(x.mesh)x.mesh.visible=soloId===null||soloId===x.id;rebuildFolders()}
+function channelSelect(value,onChange){const sel=document.createElement('select');for(let i=1;i<=8;i++){const o=document.createElement('option');o.value=i;o.textContent='Ch '+i;sel.append(o)}sel.value=value;sel.onchange=e=>onChange(Number(e.target.value));return sel}
+function renderList(){const el=document.getElementById('objects');el.replaceChildren();
+function objectRow(x,parent){const row=document.createElement('div');row.className='object'+(x.id===selected?' selected':'')+(x.folderId?' folderChild':'');const name=document.createElement('span');name.className='name';name.textContent=x.name;const dot=document.createElement('span');dot.style.cssText='width:9px;height:9px;border-radius:50%;flex:none;background:#'+colors[x.colorIndex%colors.length].toString(16).padStart(6,'0');row.append(dot,name);name.dataset.dragObject=x.id;const expand=document.createElement('button');expand.textContent=x.expanded?'▾':'▸';expand.onclick=e=>{e.stopPropagation();x.expanded=!x.expanded;renderList()};row.append(expand);if(!x.folderId)row.append(channelSelect(x.channel||1,v=>{x.channel=v;build(x);renderList();record()}));const solo=document.createElement('button');solo.textContent=soloId===x.id?'◉':'◎';solo.title='Solo';solo.onclick=e=>{e.stopPropagation();soloId=soloId===x.id?null:x.id;refreshVisibility();renderList();record()};const actions=document.createElement('span');actions.className='objectActions';actions.append(solo);for(const [label,fn] of [['複製',()=>duplicateObject(x)],['削除',()=>deleteObject(x)]]){const b=document.createElement('button');b.textContent=label;b.onclick=e=>{e.stopPropagation();fn()};actions.append(b)}row.append(actions);row.onclick=()=>{selected=x.id;selectedMaterial=null;tab('props');renderList();sync();renderMaterials();record()};parent.append(row);if(x.expanded){const mat=document.createElement('div');mat.className='folderRow folderMaterial';mat.textContent='◉ '+(x.material.name||'Material '+x.id);mat.onclick=()=>selectMaterial(x.id);parent.append(mat)}}
+for(const f of folders){const group=document.createElement('div');group.className='folderGroup';const row=document.createElement('div');row.className='folderRow';const label=document.createElement('span');label.className='name';label.textContent='📁 '+f.name;row.dataset.dropFolder=f.id;row.append(label,channelSelect(f.channel,v=>{f.channel=v;for(const x of items)if(x.folderId===f.id)build(x);renderList();record()}));const add=document.createElement('button');add.textContent='＋';add.title='選択中のオブジェクトを入れる';add.onclick=()=>{const x=current();if(!x)return;x.folderId=f.id;build(x);renderList();record()};row.append(add);const remove=document.createElement('button');remove.textContent='×';remove.title='フォルダを解除';remove.onclick=()=>{for(const x of items)if(x.folderId===f.id){x.folderId=null;build(x)}folders=folders.filter(z=>z.id!==f.id);rebuildFolders();renderList();record()};row.append(remove);group.append(row);const children=document.createElement('div');children.className='folderChildren';children.dataset.dropFolder=f.id;for(const x of items.filter(x=>x.folderId===f.id))objectRow(x,children);if(children.childElementCount)group.append(children);el.append(group)}
+const root=document.createElement('div');root.className='folderRow';root.dataset.dropRoot='1';root.textContent='▤ ルートへ移動';el.append(root);for(const x of items.filter(x=>!x.folderId))objectRow(x,el);document.getElementById('add').disabled=items.length>=5;}
+function add(type){if(items.length>=5)return;const used=new Set(items.map(x=>x.colorIndex));const colorIndex=[0,1,2,3,4].find(i=>!used.has(i));const id=nextId++;const labels={cylinder:'円柱（パラメトリック）',box:'立方体',sphere:'球体'};const x={id,name:labels[type]+' '+id,type,p:{...defaults},flat:false,colorIndex,channel:1,folderId:null,material:{...physicalMaterialDefaults,name:'Material '+id,color:'#808080',base:'',rough:'',normal:'',disp:'',strengths:{...materialStrengthDefaults}},array:{...arrayDefaults},rotation:{x:0,y:0,z:0}};items.push(x);selected=id;selectedMaterial=null;tab('props');build(x);renderList();sync();renderMaterials();record()}
+document.getElementById('addFolder').onclick=()=>{const id=nextFolderId++;folders.push({id,name:'Folder '+id,channel:1});renderList();record()};
+function duplicateObject(x){if(!x||items.length>=5)return;const clone=JSON.parse(JSON.stringify({...x,mesh:undefined}));clone.id=nextId++;clone.name=x.name+' Copy';clone.material.name='Material '+clone.id;clone.colorIndex=[0,1,2,3,4].find(i=>!items.some(y=>y.colorIndex===i));items.push(clone);selected=clone.id;if(selectedMaterial!==null)selectedMaterial=clone.id;build(clone);renderList();sync();renderMaterials();record()}
+function deleteObject(x){if(!x)return;if(soloId===x.id)soloId=null;if(selectedMaterial===x.id)selectedMaterial=null;dispose(x);items=items.filter(y=>y.id!==x.id);selected=items[0]?.id||0;refreshVisibility();renderList();sync();renderMaterials();tab('props');record()}
+document.getElementById('add').onclick=()=>add(document.getElementById('addType').value);document.getElementById('importObj').onclick=()=>document.getElementById('objFile').click();document.getElementById('objFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;if(items.length>=5){alert('オブジェクト数は最大5個です');return}try{const source=await file.text();new OBJLoader().parse(source);const id=nextId++,colorIndex=[0,1,2,3,4].find(i=>!items.some(y=>y.colorIndex===i));const x={id,name:file.name,type:'obj',objText:source,p:{...defaults},flat:false,colorIndex,channel:1,folderId:null,material:{...physicalMaterialDefaults,name:'Material '+id,color:'#808080',base:'',rough:'',normal:'',disp:''},array:{...arrayDefaults},rotation:{x:0,y:0,z:0}};items.push(x);selected=id;selectedMaterial=null;tab('props');build(x);renderList();sync();renderMaterials();record()}catch(err){alert('OBJの読み込みに失敗しました: '+err.message)}e.target.value=''};
+document.getElementById('reset').onclick=()=>{const x=current();if(!x)return;x.p={...defaults};x.flat=false;x.rotation={x:0,y:0,z:0};x.array={...arrayDefaults};x.uv={...uvDefaults};build(x);sync();record()};
+for(const [id,v] of [['flat',true],['smooth',false]])document.getElementById(id).onclick=()=>{const x=current();if(!x)return;x.flat=v;build(x);sync();record()};
+const fields=[['countX','X個数',1,5,1],['countY','Y個数',1,5,1],['countZ','Z個数',1,5,1],['spacing','隙間',0,5,.05],['scatter','Scatter',0,50,.1],['sizeRandom','サイズ乱数',0,100,1],['seed','Seed',1,9999,1],['surfaceCount','配置数',1,100,1],['surfaceRadius','配置半径',.2,5,.05],['surfaceHeight','配置高さ',.2,5,.05]];
+function rebuildChannel(){for(const x of items)if(effectiveChannel(x)===activeChannel)build(x)}
+for(const [key,label,min,max,step] of fields){const control=numericField(document.getElementById('arrayControls'),{id:'array-'+key,label,min,max,step,get:()=>current()?(channelArrays[activeChannel]||arrayDefaults)[key]:undefined,set:v=>{if(!current())return;(channelArrays[activeChannel]??={...arrayDefaults})[key]=step===1?Math.round(v):v;rebuildChannel()},reset:arrayDefaults[key]});control.row.className='arrayField';control.row.dataset.field=key}
+const rotationPanel=document.createElement('div');rotationPanel.innerHTML='<div class="group">ROTATION</div>';document.getElementById('propertiesTab').append(rotationPanel);
+for(const axis of ['x','y','z'])numericField(rotationPanel,{id:'rotation-'+axis,label:'回転 '+axis.toUpperCase(),min:-7200,max:7200,step:1,unit:'°',get:()=>current()?.rotation?.[axis]??(current()?0:undefined),set:v=>{const x=current();if(!x)return;x.rotation??={x:0,y:0,z:0};x.rotation[axis]=v;build(x)},reset:0});
+const dials=[];
+for(const [key,label] of [['rotationX','配列 X'],['rotationY','配列 Y'],['rotationZ','配列 Z'],['randomRotation','ランダム']]){const control=numericField(document.getElementById('arrayControls'),{id:'array-'+key,label,min:key==='randomRotation'?0:-7200,max:7200,step:1,unit:'°',get:()=>current()?(channelArrays[activeChannel]||arrayDefaults)[key]:undefined,set:v=>{if(!current())return;(channelArrays[activeChannel]??={...arrayDefaults})[key]=v;rebuildChannel()},reset:0});dials.push(control)}
+const uvPanel=document.createElement('div');uvPanel.innerHTML='<div class="group">UV MAPPING</div><div class="arrayField"><label for="uvMode">適用方法</label><select id="uvMode"><option value="original">元のUV</option><option value="box">ボックス</option><option value="cylindrical">円柱（Y軸）</option><option value="spherical">球面</option><option value="planarX">平面（X軸）</option><option value="planarY">平面（Y軸）</option><option value="planarZ">平面（Z軸）</option></select></div>';document.getElementById('propertiesTab').append(uvPanel);
+const uvMode=document.getElementById('uvMode');uvMode.onchange=()=>{const x=current();if(!x)return;x.uv={...uvDefaults,...x.uv,mode:uvMode.value};build(x);record()};
+for(const [key,label,min,max,step,unit] of [['scaleU','リピート U',.01,100,.05,''],['scaleV','リピート V',.01,100,.05,''],['offsetU','オフセット U',-100,100,.01,''],['offsetV','オフセット V',-100,100,.01,''],['rotation','UV 回転',-7200,7200,1,'°']])numericField(uvPanel,{id:'uv-'+key,label,min,max,step,unit,get:()=>current()?(current().uv?.[key]??uvDefaults[key]):undefined,set:v=>{const x=current();if(!x)return;x.uv={...uvDefaults,...x.uv,[key]:v};build(x)},reset:uvDefaults[key]});
+function syncUV(){uvMode.disabled=!current();uvMode.value=current()?.uv?.mode||'original';drawNumbers()}
+const channelPicker=document.getElementById('arrayChannel');for(let i=1;i<=8;i++){const option=document.createElement('option');option.value=i;option.textContent='Channel '+i;channelPicker.append(option)}channelPicker.onchange=()=>{activeChannel=Number(channelPicker.value);syncExtra();record()};
+document.getElementById('arrayMode').onchange=e=>{const x=current();if(!x)return;(channelArrays[activeChannel]??={...arrayDefaults}).mode=e.target.value;syncExtra();for(const y of items)if(effectiveChannel(y)===activeChannel)build(y);record()};
+function syncExtra(){const x=current();if(!x)return;const channel=activeChannel;channelPicker.value=channel;const a=channelArrays[channel]||(channelArrays[channel]={...arrayDefaults});document.getElementById('arrayMode').value=a.mode;for(const [key] of fields){const holder=document.querySelector('[data-field="'+key+'"]');holder.style.display=a.mode==='single'?'none':a.mode==='grid'?(key.startsWith('surface')?'none':'flex'):(['countX','countY','countZ','spacing'].includes(key)?'none':'flex')}drawNumbers();for(const control of dials)control.row.style.display=a.mode==='single'?'none':'flex'}
+function tab(t){activeTab=t;document.getElementById('propertiesTab').hidden=t!=='props';document.getElementById('arrayTab').hidden=t!=='array';document.getElementById('tabProps').classList.toggle('active',t==='props');document.getElementById('tabArray').classList.toggle('active',t==='array');document.getElementById('materialTab').hidden=t!=='material';drawNumbers();syncUV()}
+document.getElementById('tabProps').onclick=()=>tab('props');document.getElementById('tabArray').onclick=()=>tab('array');
+
+const catalog={base:[['dark_rock_diff_4k','materials/base/dark_rock_diff_4k.json']],rough:[['dark_rock_rough_4k','materials/height_rough/dark_rock_rough_4k.json']],normal:[['dark_rock_nor_gl_4k','materials/normal/dark_rock_nor_gl_4k.json']],disp:[['dark_rock_disp_4k','materials/displacement/dark_rock_disp_4k.json']]};
+// Material data is independent of Three.js; the renderer adapter below is replaceable for AE.
+const physicalMaterialDefaults=Object.freeze({schemaVersion:1,brightness:1,metallic:.24,roughness:.37,ior:1.5,alpha:1,thinWall:false,doubleSide:true,normalAmount:1,diffuseRoughness:0,subsurface:0,subsurfaceColor:'#ffb49a',subsurfaceRadius:1,specular:1,specularColor:'#ffffff',anisotropy:0,anisotropyRotation:0,transmission:0,thickness:1,attenuationColor:'#ffffff',attenuationDistance:5,coat:0,coatRoughness:.1,sheen:0,sheenColor:'#ffffff',sheenRoughness:.5,emissionColor:'#ffffff',emissionStrength:0,thinFilm:0,filmThickness:400,filmIor:1.33});
+function materialParameters(data={}){return {...physicalMaterialDefaults,...data,strengths:{...materialStrengthDefaults,...data.strengths},sources:{...data.sources}}}
+const materialStrengthDefaults={base:100,rough:100,normal:100,disp:50};
+const textures=new Map();const localFiles=new Map();
+const atlasPaths=[catalog.base[0][1],catalog.rough[0][1],catalog.normal[0][1],catalog.disp[0][1]];
+const rockPixels='201c17231e19211c18211c17211c171f1b17221d17201b17201c17211c18211c18211c18211d18211c18211c18221d18201b17211c191f1b171f1b17201c17221d181f1b171f1b17221d18211c17201b1726211a221d18221d18221d18221d18231e18211c16221e18221e19231e18221d18221d18201b17211c161e1a16211c171f1b16231d171f1a151e1915201b16211d171f1b16251f19211d18211c17221c171f1b16221d18201c171f1a171f1b171f1b17201c18201b17221d18221d18';const rockCanvas=document.createElement('canvas');rockCanvas.width=rockCanvas.height=8;const rockCtx=rockCanvas.getContext('2d'),rockData=rockCtx.createImageData(8,8);for(let i=0;i<64;i++){const p=rockPixels.slice(i*6,i*6+6);for(let k=0;k<3;k++)rockData.data[i*4+k]=parseInt(p.slice(k*2,k*2+2),16);rockData.data[i*4+3]=255}rockCtx.putImageData(rockData,0,0);const rockTexture=new THREE.CanvasTexture(rockCanvas);rockTexture.colorSpace=THREE.SRGBColorSpace;rockTexture.wrapS=rockTexture.wrapT=THREE.RepeatWrapping;rockTexture.magFilter=THREE.LinearFilter;textures.set(atlasPaths[0],rockTexture);
+// AE contract: CH 1..10 are shared input slots. The browser provider owns session-only assets;
+// an AE provider will evaluate the corresponding Custom Layer at render time, without changing material references.
+const textureChannels=Array(10).fill(null),sessionAssets=new Map(),textureViews=new Map(),mapWidgets=[];
+const legacySources={color:'base',roughness:'rough',normalAmount:'normal',displacement:'disp'};
+function sourceFor(v,key){return v.sources?.[key]??v[legacySources[key]]??''}
+function resolveSource(source){if(source.startsWith('channel:'))return textureChannels[Number(source.slice(8))-1]||'';return source}
+function loadTexture(source){const path=resolveSource(source||'');return localFiles.get(path)||textures.get(path)||null}
+function sourceName(source){if(source?.startsWith('channel:')){const index=Number(source.slice(8));return 'CH '+index+' · '+(sessionAssets.get(resolveSource(source))?.name||'未設定')}return sessionAssets.get(source)?.name||localTextureNames.get(source)||Object.values(catalog).flat().find(entry=>entry[1]===source)?.[0]||'なし'}
+function rawTexture(source){const id=resolveSource(source),texture=loadTexture(id);if(!texture)return null;const key=id+':raw';if(!textureViews.has(key)){const copy=texture.clone();copy.colorSpace=THREE.NoColorSpace;copy.needsUpdate=true;textureViews.set(key,copy)}return textureViews.get(key)}
+function colorTexture(source){const id=resolveSource(source),asset=sessionAssets.get(id),texture=loadTexture(id);if(!texture)return null;const key=id+':color';if(!textureViews.has(key)){const copy=texture.clone();copy.colorSpace=asset?.linear?THREE.LinearSRGBColorSpace:THREE.SRGBColorSpace;copy.needsUpdate=true;textureViews.set(key,copy)}return textureViews.get(key)}
+async function importSessionAsset(file){
+ const id='local:'+crypto.randomUUID(),url=URL.createObjectURL(file),extension=file.name.split('.').pop().toLowerCase();
+ try{const loader=extension==='exr'?new EXRLoader():extension==='hdr'?new RGBELoader():new THREE.TextureLoader();const texture=await loader.loadAsync(url);texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.colorSpace=THREE.NoColorSpace;localFiles.set(id,texture);localTextureNames.set(id,file.name);sessionAssets.set(id,{id,name:file.name,url,linear:extension==='exr'||extension==='hdr'});return id}catch(error){URL.revokeObjectURL(url);throw error}
+}
+function rebuildMaterials(){for(const x of items)refreshMaterialAppearance(x);renderMaterials();syncMaterial();syncMaterialOptions();syncChannels()}
+// Runtime caches never enter the JSON material model.
+const materialRuntime=new WeakMap();
+const scalarTextureKeys=['brightness','metallic','roughness','ior','alpha','diffuseRoughness','subsurface','subsurfaceRadius','specular','anisotropy','anisotropyRotation','transmission','thickness','attenuationDistance','coat','coatRoughness','sheen','sheenRoughness','emissionStrength','thinFilm','filmThickness','filmIor','thinWall','doubleSide'];
+const colorTextureKeys=['color','subsurfaceColor','specularColor','attenuationColor','sheenColor','emissionColor'];
+function materialMapBindings(v){const bindings=[],byId=new Map();for(const key of [...scalarTextureKeys,...colorTextureKeys]){const source=sourceFor(v,key),id=resolveSource(source);if(!loadTexture(source))continue;let binding=byId.get(id);if(!binding){binding={id,uniform:'labTexture'+bindings.length,keys:[],linear:!!sessionAssets.get(id)?.linear};byId.set(id,binding);bindings.push(binding)}binding.keys.push(key)}return bindings}
+function materialUniformValues(v,bindings){const values={labBaseStrength:v.strengths.base/100,labDiffuseRoughness:v.diffuseRoughness,labSubsurface:v.subsurface,labSubsurfaceRadius:v.subsurfaceRadius,labSubsurfaceColor:new THREE.Color(v.subsurfaceColor),labAnisotropyRotation:v.anisotropyRotation*Math.PI/180};for(const binding of bindings)values[binding.uniform]=rawTexture(binding.id);return values}
+function refreshUniformSets(runtime){const values=materialUniformValues(runtime.value,runtime.bindings);for(const uniforms of runtime.uniformSets)for(const [key,value] of Object.entries(values))if(uniforms[key])uniforms[key].value=value}
+function materialShaderKey(v,m,bindings){return 'primitive-physical-v3-'+JSON.stringify({maps:bindings.map(binding=>[binding.keys,binding.linear]),normal:!!m.normalMap,displacement:!!m.displacementMap,transparent:m.transparent,side:m.side,flat:m.flatShading,coat:m.clearcoat>0,sheen:m.sheen>0,transmission:m.transmission>0,film:m.iridescence>0,anisotropy:m.anisotropy>0,diffuse:v.diffuseRoughness>0||v.subsurface>0})}
+function refreshMaterialAppearance(x){if(!x.mesh)return;const materials=new Set();x.mesh.traverse(object=>{if(object.isMesh){for(const material of Array.isArray(object.material)?object.material:[object.material])materials.add(material)}});for(const material of materials)applyMaterial(x,material);invalidateScene()}
+// Texture source selection is independent of property values and renderer objects.
+function installMaterialMaps(v,shader){
+ const bindings=materialMapBindings(v),samplers=new Map(),expressions={};let declarations='';
+ for(const binding of bindings){samplers.set(binding.id,binding.uniform);shader.uniforms[binding.uniform]={value:rawTexture(binding.id)};declarations+='uniform sampler2D '+binding.uniform+';\n';for(const key of binding.keys)expressions[key]='texture2D('+binding.uniform+',vLabUv)'}
+ const scalar=key=>expressions[key]?expressions[key]+'.r':'1.0';
+ const color=key=>{if(!expressions[key])return 'vec3(1.0)';const source=resolveSource(sourceFor(v,key));return sessionAssets.get(source)?.linear?expressions[key]+'.rgb':'labDecodeColor('+expressions[key]+'.rgb)'};
+ if(!samplers.size)return {scalar,color};
+ shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec2 vLabUv;').replace('#include <uv_vertex>','#include <uv_vertex>\nvLabUv=uv;');
+ shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec2 vLabUv;\n'+declarations+'\nvec3 labDecodeColor(vec3 c){return mix(pow(max(c,vec3(0.0))*0.9478672986+0.0521327014,vec3(2.4)),c*0.0773993808,lessThanEqual(c,vec3(0.04045)));}');
+ const after=(name,code)=>shader.fragmentShader=shader.fragmentShader.replace('#include <'+name+'>','#include <'+name+'>\n'+code);
+ if(expressions.color)after('map_fragment','diffuseColor.rgb=max(vec3(0.0),mix(vec3(0.5),diffuseColor.rgb*'+color('color')+',labBaseStrength));');
+ if(expressions.brightness)after('map_fragment','diffuseColor.rgb*='+scalar('brightness')+';');
+ if(expressions.alpha)after('alphamap_fragment','diffuseColor.a*='+scalar('alpha')+';');
+ if(expressions.doubleSide)after('alphamap_fragment','if(!gl_FrontFacing && '+scalar('doubleSide')+'<0.5)discard;');
+ if(expressions.metallic)after('metalnessmap_fragment','metalnessFactor=clamp(metalnessFactor*'+scalar('metallic')+',0.0,1.0);');
+ if(expressions.roughness)after('roughnessmap_fragment','roughnessFactor=clamp(roughnessFactor*'+scalar('roughness')+',0.0,1.0);');
+ if(expressions.emissionColor||expressions.emissionStrength)after('emissivemap_fragment','totalEmissiveRadiance*='+color('emissionColor')+'*'+scalar('emissionStrength')+';');
+ let physical=THREE.ShaderChunk.lights_physical_fragment;
+ const replace=(from,to)=>physical=physical.replace(from,to);
+ replace('material.ior = ior;','material.ior=clamp(1.0+(ior-1.0)*'+scalar('ior')+',1.0,2.333);');
+ replace('float specularIntensityFactor = specularIntensity;','float specularIntensityFactor=specularIntensity*'+scalar('specular')+';');
+ replace('vec3 specularColorFactor = specularColor;','vec3 specularColorFactor=specularColor*'+color('specularColor')+';');
+ replace('material.clearcoat = clearcoat;','material.clearcoat=clearcoat*'+scalar('coat')+';');
+ replace('material.clearcoatRoughness = clearcoatRoughness;','material.clearcoatRoughness=clearcoatRoughness*'+scalar('coatRoughness')+';');
+ replace('material.iridescence = iridescence;','material.iridescence=iridescence*'+scalar('thinFilm')+';');
+ replace('material.iridescenceIOR = iridescenceIOR;','material.iridescenceIOR=clamp(1.0+(iridescenceIOR-1.0)*'+scalar('filmIor')+',1.0,2.333);');
+ replace('material.iridescenceThickness = iridescenceThicknessMaximum;','material.iridescenceThickness=iridescenceThicknessMaximum*'+scalar('filmThickness')+';');
+ replace('material.sheenColor = sheenColor;','material.sheenColor=sheenColor*'+scalar('sheen')+'*'+color('sheenColor')+';');
+ replace('material.sheenRoughness = clamp( sheenRoughness, 0.07, 1.0 );','material.sheenRoughness=clamp(sheenRoughness*'+scalar('sheenRoughness')+',0.07,1.0);');
+ if(expressions.anisotropy||expressions.anisotropyRotation){shader.uniforms.labAnisotropyRotation={value:v.anisotropyRotation*Math.PI/180};shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nuniform float labAnisotropyRotation;');const delta='(labAnisotropyRotation*('+scalar('anisotropyRotation')+'-1.0))';replace('vec2 anisotropyV = anisotropyVector;','vec2 anisotropyV=mat2(cos('+delta+'),sin('+delta+'),-sin('+delta+'),cos('+delta+'))*anisotropyVector*'+scalar('anisotropy')+';')}
+ shader.fragmentShader=shader.fragmentShader.replace('#include <lights_physical_fragment>',physical);
+ let transmission=THREE.ShaderChunk.transmission_fragment;
+ transmission=transmission.replace('material.transmission = transmission;','material.transmission=transmission*'+scalar('transmission')+';').replace('material.thickness = thickness;','material.thickness=thickness*'+scalar('thickness')+(expressions.thinWall?'*(1.0-step(0.5,'+scalar('thinWall')+'))':'')+';').replace('material.attenuationDistance = attenuationDistance;','material.attenuationDistance=max(0.001,attenuationDistance*'+scalar('attenuationDistance')+');').replace('material.attenuationColor = attenuationColor;','material.attenuationColor=attenuationColor*'+color('attenuationColor')+';');
+ shader.fragmentShader=shader.fragmentShader.replace('#include <transmission_fragment>',transmission);
+ return {scalar,color};
+}
+function applyMaterial(x,m){
+ m.normalMap=null;m.displacementMap=null;m.displacementScale=0;
+ const v=materialParameters(x.material),strength=k=>v.strengths[k]/100;
+ m.color.set(v.color||'#808080').multiplyScalar(v.brightness);m.metalness=v.metallic;m.roughness=v.roughness;
+ const activeKey=key=>!!loadTexture(sourceFor(v,key));
+ m.ior=v.ior;m.opacity=v.alpha;m.transparent=v.alpha<1||activeKey('alpha');m.depthWrite=!m.transparent;
+ m.side=v.doubleSide||activeKey('doubleSide')?THREE.DoubleSide:THREE.FrontSide;
+ m.specularIntensity=v.specular;m.specularColor.set(v.specularColor);
+ m.anisotropy=v.anisotropy;m.anisotropyRotation=v.anisotropyRotation*Math.PI/180;
+ m.transmission=v.transmission;m.thickness=v.thinWall&&!activeKey('thinWall')?0:v.thickness;
+ m.attenuationColor.set(v.attenuationColor);m.attenuationDistance=v.attenuationDistance;
+ m.clearcoat=v.coat;m.clearcoatRoughness=v.coatRoughness;
+ m.sheen=v.sheen;m.sheenColor.set(v.sheenColor);m.sheenRoughness=v.sheenRoughness;
+ m.emissive.set(v.emissionColor);m.emissiveIntensity=v.emissionStrength;
+ m.iridescence=v.thinFilm;m.iridescenceIOR=v.filmIor;m.iridescenceThicknessRange=[v.filmThickness,v.filmThickness];
+ m.envMapIntensity=.6;
+ const normalSource=sourceFor(v,'normalAmount'),dispSource=sourceFor(v,'displacement');
+ if(normalSource&&loadTexture(normalSource))m.normalMap=rawTexture(normalSource);m.normalScale.setScalar(strength('normal')*v.normalAmount);
+ if(dispSource&&loadTexture(dispSource)){m.displacementMap=rawTexture(dispSource);m.displacementScale=.06*strength('disp')}
+ m.roughness=Math.min(1,v.roughness*strength('rough'));
+ const runtime=materialRuntime.get(m)||{value:null,bindings:[],signature:null,uniformSets:new Set()};materialRuntime.set(m,runtime);
+ runtime.value=v;runtime.bindings=materialMapBindings(v);
+ const nextSignature=materialShaderKey(v,m,runtime.bindings);if(runtime.signature!==nextSignature){runtime.signature=nextSignature;m.needsUpdate=true}
+ refreshUniformSets(runtime);
+ // Diffuse uses Oren-Nayar for direct lights. Subsurface is a real-time wrap/backscatter approximation.
+ m.onBeforeCompile=shader=>{
+  const v=runtime.value,strength=key=>v.strengths[key]/100;
+  const mapped=installMaterialMaps(v,shader);
+  Object.assign(shader.uniforms,{labBaseStrength:{value:strength('base')},labDiffuseRoughness:{value:v.diffuseRoughness},labSubsurface:{value:v.subsurface},labSubsurfaceRadius:{value:v.subsurfaceRadius},labSubsurfaceColor:{value:new THREE.Color(v.subsurfaceColor)}});
+  shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nuniform float labBaseStrength;\nuniform float labDiffuseRoughness;\nuniform float labSubsurface;\nuniform float labSubsurfaceRadius;\nuniform vec3 labSubsurfaceColor;');
+  // Keep the existing base-map intensity convention for compatibility with saved materials.
+  shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>','#include <map_fragment>\n#ifdef USE_MAP\ndiffuseColor.rgb = max(vec3(0.0), mix(vec3(0.5),diffuseColor.rgb,labBaseStrength));\n#endif');
+  if(v.diffuseRoughness>0||v.subsurface>0){
+   const direct='reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );';
+   const replacement=`
+    float labNL=dot(geometryNormal,directLight.direction);
+    float labNV=max(dot(geometryNormal,geometryViewDir),0.0001);
+    float labSigma=labDiffuseRoughness*${mapped.scalar('diffuseRoughness')}*1.57079632679;
+    float labSigma2=labSigma*labSigma;
+    float labA=1.0-0.5*labSigma2/(labSigma2+0.33);
+    float labB=0.45*labSigma2/(labSigma2+0.09);
+    vec3 labL=directLight.direction-geometryNormal*labNL;
+    vec3 labV=geometryViewDir-geometryNormal*labNV;
+    float labCos=max(0.0,dot(labL,labV)/max(length(labL)*length(labV),0.0001));
+    float labSinL=sqrt(max(0.0,1.0-dotNL*dotNL));
+    float labSinV=sqrt(max(0.0,1.0-labNV*labNV));
+    float labOren=labA+labB*labCos*max(labSinL,labSinV)*min(labSinL/max(dotNL,0.0001),labSinV/labNV);
+    float labRadius=labSubsurfaceRadius*${mapped.scalar('subsurfaceRadius')};
+    float labWeight=labSubsurface*${mapped.scalar('subsurface')};
+    float labWrap=0.15+min(labRadius,5.0)*0.15;
+    float labSoft=clamp((labNL+labWrap)/(1.0+labWrap),0.0,1.0);
+    float labBack=pow(max(-labNL,0.0),1.0/max(labRadius,0.05))*0.2;
+    float labLight=mix(dotNL*labOren,labSoft+labBack,labWeight);
+    reflectedLight.directDiffuse += directLight.color*labLight*BRDF_Lambert(material.diffuseColor)*mix(vec3(1.0),labSubsurfaceColor*${mapped.color('subsurfaceColor')},labWeight);
+   `;
+   shader.fragmentShader=shader.fragmentShader.replace('#include <lights_physical_pars_fragment>',THREE.ShaderChunk.lights_physical_pars_fragment.replace(direct,replacement));
+  }
+  runtime.uniformSets.add(shader.uniforms);refreshUniformSets(runtime);
+ };
+ m.customProgramCacheKey=()=>runtime.signature;
+}
+const localTextureNames=new Map();
+function shortFilename(name){const chars=Array.from(name);return chars.length>10?chars.slice(0,7).join('')+'...':name}
+function refreshSourceOptions(select,value){select.replaceChildren();function option(id,name){const item=document.createElement('option');item.value=id;item.textContent=shortFilename(name);item.title=name;select.append(item)}option('','なし');for(let i=1;i<=10;i++)option('channel:'+i,'CH '+i+' · '+(sessionAssets.get(textureChannels[i-1])?.name||'未設定'));for(const asset of sessionAssets.values())option(asset.id,asset.name);for(const [id,texture] of textures)if(texture)option(id,sourceName(id));if(value&&![...select.options].some(option=>option.value===value))option(value,sourceName(value));select.value=value||'';select.title=sourceName(value)}
+function textureInput(row,key,label){
+ const select=document.createElement('select');select.className='sourceSelect';select.dataset.source=key;select.setAttribute('aria-label',label+' テクスチャ');
+ const file=document.createElement('input');file.type='file';file.hidden=true;file.accept='.png,.jpg,.jpeg,.exr,.hdr,image/png,image/jpeg';
+ const open=document.createElement('button');open.type='button';open.className='textureOpen';open.textContent='📂';open.setAttribute('aria-label',label+'の画像を開く');open.title=label+'の画像を開く';open.onclick=()=>file.click();
+ const link=document.createElement('a');link.className='sourceLink';link.target='_blank';link.rel='noopener';link.hidden=true;
+ const status=document.createElement('span');status.className='loadStatus';status.setAttribute('role','status');
+ row.append(select,open,link,file,status);
+ const change=source=>{const x=editedMaterial();if(!x)return;x.material.sources??={};x.material.sources[key]=source;refreshMaterialAppearance(x);syncMaterial();syncMaterialOptions();renderMaterials();record()};
+ select.onchange=()=>change(select.value);
+ file.onchange=async()=>{const image=file.files[0],target=editedMaterial();if(!image||!target)return;open.disabled=true;status.textContent='読込中';try{const id=await importSessionAsset(image);if(items.includes(target)){target.material.sources??={};target.material.sources[key]=id;refreshMaterialAppearance(target);renderMaterials();syncMaterial();syncMaterialOptions();record()}status.textContent=''}catch(error){status.textContent='読み込み失敗';console.error(error)}finally{open.disabled=false;file.value='';if(status.textContent==='読込中')status.textContent=''}};
+ const widget={draw(){const x=editedMaterial(),source=x?sourceFor(x.material,key):'';refreshSourceOptions(select,source);select.disabled=!x;open.disabled=!x;const asset=sessionAssets.get(resolveSource(source));link.hidden=!asset;if(asset){link.textContent=shortFilename(asset.name);link.href=asset.url;link.title=asset.name+' — 参照画像を開く（ブラウザからローカルフォルダは開けません）'}}};mapWidgets.push(widget);widget.draw();
+}
+function syncMaterial(){const x=editedMaterial();if(!x)return;document.getElementById('baseTint').value=x.material.color||'#808080';document.getElementById('baseTint').disabled=false;for(const widget of mapWidgets)widget.draw();drawNumbers()}
+
+for(const key of ['bevelInner','bevelCuts'])document.getElementById(key).onchange=e=>{const x=current();if(!x)return;x.p[key]=e.target.checked;build(x);record()};
+function selectMaterial(id){selectedMaterial=id;selected=id;renderList();renderMaterials();tab('material');syncMaterial();syncMaterialOptions();drawNumbers()}
+const materialWidgets=[];
+function editedMaterial(){return items.find(x=>x.id===selectedMaterial)}
+function syncMaterialOptions(){const x=editedMaterial();if(!x)return;const values=materialParameters(x.material);for(const widget of materialWidgets)widget.draw(values);for(const widget of mapWidgets)widget.draw();drawNumbers()}
+function renderMaterials(){const library=document.getElementById('materialLibrary');library.replaceChildren();for(const x of items){const card=document.createElement('button');card.className='matCard'+(selectedMaterial===x.id?' active':'');const canvas=document.createElement('canvas');canvas.width=canvas.height=96;card.append(canvas);const label=document.createElement('small');label.textContent=x.material.name||'Material '+x.id;card.append(label);card.onclick=()=>selectMaterial(x.id);library.append(card);
+const c=canvas.getContext('2d');const gradient=c.createRadialGradient(33,27,4,48,48,43);const base=new THREE.Color(x.material.color||'#808080');const hsl={};base.getHSL(hsl);gradient.addColorStop(0,'#d5d5d5');gradient.addColorStop(.22,'#'+base.clone().multiplyScalar(1.3).getHexString());gradient.addColorStop(.78,'#'+base.getHexString());gradient.addColorStop(1,'#111111');c.beginPath();c.arc(48,48,39,0,Math.PI*2);c.fillStyle=gradient;c.fill();if(sourceFor(x.material,'color')&&loadTexture(sourceFor(x.material,'color'))){const t=colorTexture(sourceFor(x.material,'color'));const img=t.image;if(img){c.save();c.globalCompositeOperation='multiply';c.beginPath();c.arc(48,48,39,0,Math.PI*2);c.clip();try{c.drawImage(img,9,9,78,78)}catch{}c.restore()}}}}
+const matOptions=document.createElement('div');matOptions.innerHTML='<div class="group">PRINCIPLED MATERIAL</div><div class="matRow"><label for="matName">名前</label><input id="matName" type="text"></div><div class="matRow"><label for="baseTint">Base Color</label><input id="baseTint" type="color" value="#808080"></div><div id="matNumbers"></div><div id="materialChecks"></div><div id="materialGroups"></div>';document.getElementById('materialTab').prepend(matOptions);
+function updateMaterial(key,value){const x=editedMaterial();if(!x||Object.is(x.material[key],value))return;x.material[key]=value;if(key==='name'){renderMaterials();renderList();return}refreshMaterialAppearance(x);if(key==='color')renderMaterials()}
+for(const [id,key] of [['matName','name'],['baseTint','color']]){const input=document.getElementById(id);input.oninput=()=>updateMaterial(key,input.value);input.onchange=record;materialWidgets.push({draw:v=>{if(document.activeElement!==input)input.value=v[key]||(key==='name'?'Material '+selectedMaterial:'#808080')}})}
+function materialNumber(parent,key,label,min,max,step,unit=''){
+ const id={brightness:'matBrightness',roughness:'matRoughness'}[key]||'mat-'+key;
+ const control=numericField(parent,{id,label,min,max,step,unit,get:()=>{const x=editedMaterial();return x?materialParameters(x.material)[key]:undefined},set:v=>updateMaterial(key,v),reset:physicalMaterialDefaults[key]});textureInput(control.row,key,label);
+}
+function materialColor(parent,key,label){const row=document.createElement('div');row.className='matRow';const caption=document.createElement('label'),input=document.createElement('input');input.id='mat-'+key;input.type='color';caption.htmlFor=input.id;caption.textContent=label;row.append(caption,input);parent.append(row);const reset=document.createElement('button');reset.className='mini-reset';reset.textContent='↺';reset.setAttribute('aria-label',label+'の色をリセット');reset.onclick=()=>{updateMaterial(key,physicalMaterialDefaults[key]||'#808080');input.value=physicalMaterialDefaults[key]||'#808080';record()};row.append(reset);textureInput(row,key,label);input.oninput=()=>updateMaterial(key,input.value);input.onchange=record;materialWidgets.push({draw:v=>input.value=v[key]})}
+function materialCheck(parent,key,label){const row=document.createElement('div');row.className='arrayField';const caption=document.createElement('label'),input=document.createElement('input');input.id=key==='doubleSide'?'matDoubleSide':'mat-'+key;input.type='checkbox';caption.htmlFor=input.id;caption.style.width='auto';caption.append(input,document.createTextNode(label));row.append(caption);parent.append(row);textureInput(row,key,label);input.onchange=()=>{updateMaterial(key,input.checked);record();syncMaterialOptions()};materialWidgets.push({draw:v=>input.checked=v[key]})}
+function materialGroup(title,note=''){const details=document.createElement('details');details.className='materialGroup';const summary=document.createElement('summary');summary.textContent=title;details.append(summary);if(note){const hint=document.createElement('p');hint.className='note';hint.textContent=note;details.append(hint)}document.getElementById('materialGroups').append(details);return details}
+const baseRow=document.getElementById('baseTint').closest('.matRow');
+const baseReset=document.createElement('button');baseReset.className='mini-reset';baseReset.textContent='↺';baseReset.setAttribute('aria-label','Base Colorの色をリセット');baseReset.onclick=()=>{updateMaterial('color','#808080');document.getElementById('baseTint').value='#808080';record()};baseRow.append(baseReset);textureInput(baseRow,'color','Base Color');
+const baseControl=numericField(baseRow,{id:'strength-base',label:'Base Color 適用度',min:0,max:500,step:1,unit:'%',get:()=>editedMaterial()?materialParameters(editedMaterial().material).strengths.base:undefined,set:v=>{const x=editedMaterial();if(!x)return;x.material.strengths??={};x.material.strengths.base=v;refreshMaterialAppearance(x)},reset:100});baseControl.row.classList.add('inlineStrength');baseControl.row.querySelector('label').remove();
+const basic=document.getElementById('matNumbers');
+for(const [key,label,min,max,step] of [['brightness','明るさ',0,3,.05],['metallic','Metallic',0,1,.01],['roughness','Roughness',0,1,.01],['ior','IOR',1,2.333,.01],['alpha','Alpha',0,1,.01]])materialNumber(basic,key,label,min,max,step);
+materialCheck(document.getElementById('materialChecks'),'thinWall','Thin Wall（薄壁）');materialCheck(document.getElementById('materialChecks'),'doubleSide','裏面表示');
+const normalGroup=materialGroup('Normal');materialNumber(normalGroup,'normalAmount','強さ',0,5,.05);
+const diffuseGroup=materialGroup('Diffuse','拡散反射の粗さ。直接光に適用します。');materialNumber(diffuseGroup,'diffuseRoughness','Roughness',0,1,.01);
+const sssGroup=materialGroup('Subsurface（近似）','内部の光散乱を表面の照明で近似します。Blenderの体積散乱とは異なります。');materialNumber(sssGroup,'subsurface','Weight',0,1,.01);materialColor(sssGroup,'subsurfaceColor','Color');materialNumber(sssGroup,'subsurfaceRadius','広がり',.05,5,.05);
+const specularGroup=materialGroup('Specular');materialNumber(specularGroup,'specular','強さ',0,1,.01);materialColor(specularGroup,'specularColor','Color');materialNumber(specularGroup,'anisotropy','異方性',0,1,.01);materialNumber(specularGroup,'anisotropyRotation','方向',-360,360,1,'°');
+const transmissionGroup=materialGroup('Transmission','Thin Wallを有効にすると、光学的な厚みを0として描画します。');materialNumber(transmissionGroup,'transmission','Weight',0,1,.01);materialNumber(transmissionGroup,'thickness','厚み',0,10,.05);materialColor(transmissionGroup,'attenuationColor','吸収色');materialNumber(transmissionGroup,'attenuationDistance','吸収距離',.01,100,.1);materialWidgets.push({draw:v=>{document.getElementById('mat-thickness').closest('.row').hidden=v.thinWall}});
+const coatGroup=materialGroup('Coat');materialNumber(coatGroup,'coat','Weight',0,1,.01);materialNumber(coatGroup,'coatRoughness','Roughness',0,1,.01);
+const sheenGroup=materialGroup('Sheen');materialNumber(sheenGroup,'sheen','Weight',0,1,.01);materialColor(sheenGroup,'sheenColor','Color');materialNumber(sheenGroup,'sheenRoughness','Roughness',0,1,.01);
+const emissionGroup=materialGroup('Emission','表面の発光です。周囲への照明や光のにじみは含みません。');materialColor(emissionGroup,'emissionColor','Color');materialNumber(emissionGroup,'emissionStrength','強さ',0,50,.1);
+const dispGroup=materialGroup('Displacement');const dispControl=numericField(dispGroup,{id:'strength-disp',label:'適用度',min:0,max:500,step:1,unit:'%',get:()=>editedMaterial()?materialParameters(editedMaterial().material).strengths.disp:undefined,set:v=>{const x=editedMaterial();if(!x)return;x.material.strengths??={};x.material.strengths.disp=v;refreshMaterialAppearance(x)},reset:50});textureInput(dispControl.row,'displacement','Displacement');
+const filmGroup=materialGroup('Thin Film');materialNumber(filmGroup,'thinFilm','Weight',0,1,.01);materialNumber(filmGroup,'filmThickness','膜厚',0,2000,10,'nm');materialNumber(filmGroup,'filmIor','IOR',1,2.333,.01);
+function makeDialog(id,title){const dialog=document.createElement('dialog');dialog.id=id;const head=document.createElement('div');head.className='dialogHead';const heading=document.createElement('strong');heading.textContent=title;const close=document.createElement('button');close.type='button';close.textContent='閉じる';close.onclick=()=>dialog.close();head.append(heading,close);dialog.append(head);document.body.append(dialog);dialog.addEventListener('click',e=>{if(e.target===dialog){const rect=dialog.getBoundingClientRect();if(e.clientX<rect.left||e.clientX>rect.right||e.clientY<rect.top||e.clientY>rect.bottom)dialog.close()}});return dialog}
+const channelsDialog=makeDialog('channelsDialog','Texture Channels 1–10');
+const channelHint=document.createElement('p');channelHint.className='dialogHint';channelHint.textContent='全マテリアルで共有するテクスチャ入力です。保存はこのページを開いている間のみです。AE版では同じCH番号をカスタムレイヤー入力へ対応させます。';channelsDialog.append(channelHint);
+const channelRows=[];
+for(let index=0;index<10;index++){
+ const row=document.createElement('div');row.className='channelRow';const label=document.createElement('strong');label.textContent='CH '+(index+1);
+ const select=document.createElement('select');select.className='channelFile';select.setAttribute('aria-label','CH '+(index+1)+' のテクスチャ');
+ const file=document.createElement('input');file.type='file';file.hidden=true;file.accept='.png,.jpg,.jpeg,.exr,.hdr,image/png,image/jpeg';
+ const open=document.createElement('button');open.textContent='📂';open.setAttribute('aria-label','CH '+(index+1)+' に画像を読み込む');open.onclick=()=>file.click();
+ const clear=document.createElement('button');clear.textContent='解除';clear.onclick=()=>{revision++;textureChannels[index]=null;rebuildMaterials();record()};
+ const status=document.createElement('span');status.setAttribute('role','status');status.className='loadStatus';row.append(label,select,open,clear,file,status);channelsDialog.append(row);channelRows.push({select,status});
+ select.onchange=()=>{revision++;textureChannels[index]=select.value||null;rebuildMaterials();record()};
+ let revision=0;file.onchange=async()=>{const image=file.files[0];if(!image)return;const pending=++revision;status.textContent='読込中';open.disabled=true;try{const id=await importSessionAsset(image);if(pending===revision){textureChannels[index]=id;rebuildMaterials();record();status.textContent=''}}catch(error){status.textContent='読み込み失敗';console.error(error)}finally{open.disabled=false;file.value='';if(status.textContent==='読込中')status.textContent=''}};
+}
+function syncChannels(){for(let index=0;index<10;index++){const select=channelRows[index]?.select;if(!select)continue;select.replaceChildren();const empty=document.createElement('option');empty.value='';empty.textContent='未設定';select.append(empty);for(const asset of sessionAssets.values()){const option=document.createElement('option');option.value=asset.id;option.textContent=asset.name;select.append(option)}select.value=textureChannels[index]||'';select.title=sessionAssets.get(textureChannels[index])?.name||'未設定'}}
+document.getElementById('channelsButton').onclick=()=>{syncChannels();channelsDialog.showModal()};
+const environmentDefaults=Object.freeze({source:'studio',intensity:1,rotation:0,exposure:1,background:false,backgroundIntensity:1});
+const environmentState={...environmentDefaults},environmentCache=new Map(),environmentAssets=new Set();
+function applyEnvironment(){
+ invalidateScene();
+ if(environmentState.source==='studio')scene.environment=studioEnvironment;
+ else if(environmentState.source==='none')scene.environment=null;
+ else if(environmentCache.has(environmentState.source))scene.environment=environmentCache.get(environmentState.source).texture;
+ else scene.environment=studioEnvironment;
+ const source=environmentState.source,asset=sessionAssets.get(source);
+ scene.background=environmentState.background&&asset?colorTexture(source):new THREE.Color('#1b212b');
+ if(scene.background?.isTexture)scene.background.mapping=THREE.EquirectangularReflectionMapping;
+ scene.environmentIntensity=environmentState.intensity;scene.backgroundIntensity=environmentState.backgroundIntensity;
+ scene.environmentRotation.set(0,environmentState.rotation*Math.PI/180,0);scene.backgroundRotation.copy(scene.environmentRotation);
+ renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=environmentState.exposure;
+ syncEnvironment();
+}
+async function prepareEnvironment(id){if(!environmentCache.has(id)){const texture=colorTexture(id);texture.mapping=THREE.EquirectangularReflectionMapping;const generator=new THREE.PMREMGenerator(renderer);try{environmentCache.set(id,generator.fromEquirectangular(texture))}finally{generator.dispose()}}environmentAssets.add(id)}
+const environmentDialog=makeDialog('environmentDialog','Environment');
+const envRow=document.createElement('div');envRow.className='matRow';const envLabel=document.createElement('label');envLabel.textContent='環境';const envSelect=document.createElement('select');envSelect.id='environmentSource';envSelect.setAttribute('aria-label','環境マップ');const envFile=document.createElement('input');envFile.type='file';envFile.hidden=true;envFile.accept='.hdr,.exr,.png,.jpg,.jpeg';const envOpen=document.createElement('button');envOpen.textContent='📂 HDRIを開く';envOpen.onclick=()=>envFile.click();const envStatus=document.createElement('span');envStatus.setAttribute('role','status');envRow.append(envLabel,envSelect,envOpen,envFile,envStatus);environmentDialog.append(envRow);
+const envHint=document.createElement('p');envHint.className='dialogHint';envHint.textContent='HDR / EXR、または全天球のPNG/JPGを環境マップに使えます。反射・環境光の設定です。保存はこのページ内のみです。';environmentDialog.append(envHint);
+const environmentControls=[];
+for(const [key,label,min,max,step,unit] of [['intensity','強さ',0,10,.05,''],['rotation','回転',-7200,7200,1,'°'],['exposure','露出',0,5,.05,''],['backgroundIntensity','背景強度',0,10,.05,'']])environmentControls.push(numericField(environmentDialog,{id:'env-'+key,label,min,max,step,unit,get:()=>environmentState[key],set:value=>{environmentState[key]=value;applyEnvironment()},reset:environmentDefaults[key]}));
+const backgroundRow=document.createElement('label');backgroundRow.className='arrayField';const backgroundToggle=document.createElement('input');backgroundToggle.type='checkbox';backgroundToggle.id='env-background';backgroundRow.append(backgroundToggle,document.createTextNode('環境マップを背景に表示'));environmentDialog.append(backgroundRow);backgroundToggle.onchange=()=>{environmentState.background=backgroundToggle.checked;applyEnvironment();record()};
+function syncEnvironment(){envSelect.replaceChildren();for(const [id,name] of [['studio','Studio（内蔵）'],['none','環境マップなし'],...[...environmentAssets].map(id=>[id,sessionAssets.get(id)?.name||id])]){const option=document.createElement('option');option.value=id;option.textContent=name;envSelect.append(option)}envSelect.value=environmentState.source;backgroundToggle.checked=environmentState.background;for(const control of environmentControls)control.draw()}
+envSelect.onchange=()=>{environmentRevision++;environmentState.source=envSelect.value;applyEnvironment();record()};
+let environmentRevision=0;envFile.onchange=async()=>{const file=envFile.files[0];if(!file)return;const pending=++environmentRevision;envStatus.textContent='読込中';envOpen.disabled=true;try{const id=await importSessionAsset(file);await prepareEnvironment(id);if(pending===environmentRevision){environmentState.source=id;applyEnvironment();syncChannels();syncMaterial();record();envStatus.textContent=''}}catch(error){envStatus.textContent='読み込み失敗';console.error(error)}finally{envFile.value='';envOpen.disabled=false;if(envStatus.textContent==='読込中')envStatus.textContent=''}};
+document.getElementById('environmentButton').onclick=()=>{syncEnvironment();environmentDialog.showModal()};
+applyEnvironment();syncChannels();
+const workspace=document.getElementById('workspace'),handle=document.getElementById('dividerHandle');let dragging=false;handle.addEventListener('pointerdown',e=>{dragging=true;handle.setPointerCapture(e.pointerId);e.preventDefault()});handle.addEventListener('pointermove',e=>{if(!dragging)return;const rect=workspace.getBoundingClientRect();const percentage=Math.max(18,Math.min(82,(e.clientX-rect.left)/rect.width*100));workspace.style.setProperty('--split',percentage+'%')});handle.addEventListener('pointerup',()=>dragging=false);handle.addEventListener('pointercancel',()=>dragging=false);
+
+const sideResize=document.getElementById('sceneResize'),heightResize=document.getElementById('heightResize');
+function resizeDrag(el,move){let active=false;el.onpointerdown=e=>{active=true;el.setPointerCapture(e.pointerId);e.preventDefault()};el.onpointermove=e=>{if(active)move(e)};el.onpointerup=()=>{active=false};el.onpointercancel=()=>{active=false}}
+resizeDrag(sideResize,e=>{const rect=document.getElementById('viewport').getBoundingClientRect();const width=Math.max(95,Math.min(rect.width-110,rect.right-e.clientX));document.documentElement.style.setProperty('--scene-width',width+'px')});
+resizeDrag(heightResize,e=>{const height=Math.max(120,Math.min(innerHeight-170,e.clientY-document.querySelector('header').getBoundingClientRect().height));document.documentElement.style.setProperty('--view-height',height+'px')});
+let objectDrag=null;
+const outliner=document.getElementById('objects');
+outliner.addEventListener('pointerdown',e=>{const name=e.target.closest('[data-drag-object]');if(!name)return;const id=Number(name.dataset.dragObject);const row=name.closest('.object');objectDrag={id,startX:e.clientX,startY:e.clientY,active:false,ghost:null,row};name.setPointerCapture(e.pointerId)});
+outliner.addEventListener('pointermove',e=>{const d=objectDrag;if(!d)return;if(!d.active&&Math.hypot(e.clientX-d.startX,e.clientY-d.startY)>8){d.active=true;d.ghost=document.createElement('div');d.ghost.className='dragGhost';d.ghost.textContent=items.find(x=>x.id===d.id)?.name||'Object';document.body.append(d.ghost)}if(!d.active)return;e.preventDefault();d.ghost.style.left=e.clientX+10+'px';d.ghost.style.top=e.clientY+10+'px';document.querySelectorAll('.dropTarget').forEach(n=>n.classList.remove('dropTarget'));const hit=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-drop-folder],[data-drop-root]');if(hit)hit.classList.add('dropTarget')});
+function finishObjectDrag(e){const d=objectDrag;if(!d)return;objectDrag=null;d.ghost?.remove();document.querySelectorAll('.dropTarget').forEach(n=>n.classList.remove('dropTarget'));if(!d.active)return;const hit=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-drop-folder],[data-drop-root]');if(!hit)return;const x=items.find(x=>x.id===d.id);if(!x)return;x.folderId=hit.dataset.dropRoot?null:Number(hit.dataset.dropFolder);build(x);renderList();record()}
+outliner.addEventListener('pointerup',finishObjectDrag);outliner.addEventListener('pointercancel',()=>{objectDrag?.ghost?.remove();objectDrag=null});
+new ResizeObserver(()=>document.documentElement.style.setProperty('--header-height',document.querySelector('header').getBoundingClientRect().height+'px')).observe(document.querySelector('header'));
+new ResizeObserver(()=>{invalidateScene();renderer.setSize(host.clientWidth,host.clientHeight);camera.aspect=host.clientWidth/host.clientHeight;camera.updateProjectionMatrix()}).observe(host);
+add('cylinder');renderMaterials();function frame(){requestAnimationFrame(frame);const controlsChanged=orbit.update();const now=performance.now();if(sceneNeedsRender||controlsChanged){const start=performance.now();renderer.render(scene,camera);sceneNeedsRender=false;updatePerformanceHud(now,true,performance.now()-start)}else updatePerformanceHud(now,false)}frame();
+</script></body></html>
