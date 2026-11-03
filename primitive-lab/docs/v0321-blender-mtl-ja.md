@@ -1,0 +1,9 @@
+# v0.32.1 Blender MTL互換性修正
+
+map_Nsはファイル名にrough/roughnessを含む場合Roughnessとして読み込み、それ以外は0〜1のPhong指数画像を0〜1000へ換算して粗さへ近似変換します。Blender書き出しのmap_Bumpでnor/normal/nrmと識別できる画像は接線空間Normalへ接続、dx/DirectXはY反転。それ以外は高さBumpとして読みます。これらの名前による判別はヒューリスティックで、任意のノードグラフ再現ではありません。
+
+-bmはNormal/Bump強度として反映。Kdなしでmap_Kdありの場合は白を乗算色にし、暗くなる問題を修正。選択画像はMTL記載の絶対パスが違っても、一意な同名ファイルなら関連付けます。OBJ/MTL/参照画像の同時選択が引き続き必要です。
+
+提示されたMTLにはBase Color・Roughness・Normalの3画像参照があります。Displacement参照は含まれていません。
+
+検証: 提示MTLを実OBJLoaderと模擬テクスチャローダーのテストに使用し、3画像の関連付け、Roughness/Normalの認識、黒材質、Bump切替を確認。元のサッカーボールOBJはこの検証には使用していません。
